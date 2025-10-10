@@ -2,6 +2,7 @@
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useCaptionStore } from '../stores/captionStore'
 import { useConfig } from '../composables/useConfig'
+import { CONFIG_KEYS, DEFAULTS, EVENTS } from '../constants'
 
 const store = useCaptionStore()
 const config = useConfig()
@@ -9,15 +10,17 @@ const localCaption = ref('')
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
 // Editor settings from config
-const fontSize = ref(14)
-const lineHeight = ref(1.6)
+const fontSize = ref(DEFAULTS.FONT_SIZE)
+const lineHeight = ref(DEFAULTS.LINE_HEIGHT)
 
 // Load editor settings
 const loadEditorSettings = async (): Promise<void> => {
-  const editorConfig = await config.get<{ fontSize?: number; lineHeight?: number }>('editor')
+  const editorConfig = await config.get<{ fontSize?: number; lineHeight?: number }>(
+    CONFIG_KEYS.EDITOR
+  )
   if (editorConfig) {
-    fontSize.value = editorConfig.fontSize ?? 14
-    lineHeight.value = editorConfig.lineHeight ?? 1.6
+    fontSize.value = editorConfig.fontSize ?? DEFAULTS.FONT_SIZE
+    lineHeight.value = editorConfig.lineHeight ?? DEFAULTS.LINE_HEIGHT
   }
 }
 
@@ -25,11 +28,11 @@ onMounted(async () => {
   await loadEditorSettings()
 
   // Listen for settings updates
-  window.addEventListener('settings-updated', loadEditorSettings)
+  window.addEventListener(EVENTS.SETTINGS_UPDATED, loadEditorSettings)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('settings-updated', loadEditorSettings)
+  window.removeEventListener(EVENTS.SETTINGS_UPDATED, loadEditorSettings)
 })
 
 // Watch for changes in current image and update local caption

@@ -1,6 +1,8 @@
 import { ref } from 'vue'
 import { useCaptionStore } from '../stores/captionStore'
 import { useConfig } from './useConfig'
+import { useDialog } from './useDialog'
+import { CONFIG_KEYS } from '../constants'
 
 /**
  * Composable for file operations (open, save, close)
@@ -10,10 +12,11 @@ export function useFileOperations(): {
   isSaving: ReturnType<typeof ref<boolean>>
   openFolder: () => Promise<{ folderPath: string; images: unknown[] } | null>
   saveCaptions: (showAlert?: boolean) => Promise<boolean>
-  closeFolder: () => boolean
+  closeFolder: () => Promise<boolean>
 } {
   const store = useCaptionStore()
   const config = useConfig()
+  const { showInfo, showError, showConfirm } = useDialog()
   const isSaving = ref(false)
 
   const openFolder = async (): Promise<{ folderPath: string; images: unknown[] } | null> => {
@@ -24,9 +27,9 @@ export function useFileOperations(): {
       // Add to recent folders
       await config.addRecentFolder(result.folderPath)
       // Save as last opened folder if enabled
-      const rememberLastFolder = await config.get('behavior.rememberLastFolder')
+      const rememberLastFolder = await config.get(CONFIG_KEYS.BEHAVIOR_REMEMBER_LAST_FOLDER)
       if (rememberLastFolder) {
-        await config.set('behavior.lastOpenedFolder', result.folderPath)
+        await config.set(CONFIG_KEYS.BEHAVIOR_LAST_OPENED_FOLDER, result.folderPath)
       }
     }
     return result
@@ -48,12 +51,12 @@ export function useFileOperations(): {
       store.markAsSaved()
 
       if (showAlert) {
-        alert('All captions saved successfully!')
+        await showInfo('All captions saved successfully!')
       }
       return true
     } catch (error) {
       const message = `Error saving captions: ${error}`
-      alert(message)
+      await showError(message)
       console.error(message)
       return false
     } finally {
@@ -61,9 +64,14 @@ export function useFileOperations(): {
     }
   }
 
-  const closeFolder = (): boolean => {
+  const closeFolder = async (): Promise<boolean> => {
     if (store.hasUnsavedChanges) {
-      const confirmed = confirm('You have unsaved changes. Are you sure you want to close?')
+      const confirmed = await showConfirm(
+        'You have unsaved changes. Are you sure you want to close?',
+        'Unsaved Changes',
+        'Close',
+        'Cancel'
+      )
       if (!confirmed) return false
     }
     store.clearAll()

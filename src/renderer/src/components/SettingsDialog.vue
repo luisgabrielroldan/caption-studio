@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useConfig } from '../composables/useConfig'
+import { useDialog } from '../composables/useDialog'
 import KeyBindingInput from './KeyBindingInput.vue'
+import { CONFIG_KEYS, DEFAULTS, EVENTS } from '../constants'
 
 const config = useConfig()
+const { showConfirm, showError } = useDialog()
 const isVisible = ref(false)
 
 // Settings state
-const fontSize = ref(14)
-const lineHeight = ref(1.6)
-const theme = ref<'dark' | 'light' | 'system'>('dark')
-const rememberLastFolder = ref(true)
-const veilKey = ref('Shift + F12')
+const fontSize = ref(DEFAULTS.FONT_SIZE)
+const lineHeight = ref(DEFAULTS.LINE_HEIGHT)
+const theme = ref<'dark' | 'light' | 'system'>(DEFAULTS.THEME)
+const rememberLastFolder = ref(DEFAULTS.REMEMBER_LAST_FOLDER)
+const veilKey = ref(DEFAULTS.VEIL_KEY)
 
 // Load settings from config
 const loadSettings = async (): Promise<void> => {
@@ -22,11 +25,12 @@ const loadSettings = async (): Promise<void> => {
     features?: { veilKey?: string }
   }
   if (allConfig) {
-    fontSize.value = allConfig.editor?.fontSize ?? 14
-    lineHeight.value = allConfig.editor?.lineHeight ?? 1.6
-    theme.value = allConfig.ui?.theme ?? 'dark'
-    rememberLastFolder.value = allConfig.behavior?.rememberLastFolder ?? true
-    veilKey.value = allConfig.features?.veilKey ?? 'Shift + F12'
+    fontSize.value = allConfig.editor?.fontSize ?? DEFAULTS.FONT_SIZE
+    lineHeight.value = allConfig.editor?.lineHeight ?? DEFAULTS.LINE_HEIGHT
+    theme.value = allConfig.ui?.theme ?? DEFAULTS.THEME
+    rememberLastFolder.value =
+      allConfig.behavior?.rememberLastFolder ?? DEFAULTS.REMEMBER_LAST_FOLDER
+    veilKey.value = allConfig.features?.veilKey ?? DEFAULTS.VEIL_KEY
   }
 }
 
@@ -49,58 +53,65 @@ const hide = (): void => {
 const saveSettings = async (): Promise<void> => {
   try {
     // Get current editor and update only fontSize and lineHeight
-    const currentEditor = (await config.get('editor')) || {}
-    await config.set('editor', {
+    const currentEditor = (await config.get(CONFIG_KEYS.EDITOR)) || {}
+    await config.set(CONFIG_KEYS.EDITOR, {
       ...currentEditor,
       fontSize: fontSize.value,
       lineHeight: lineHeight.value
     })
 
     // Get current ui and update only theme
-    const currentUi = (await config.get('ui')) || {}
-    await config.set('ui', {
+    const currentUi = (await config.get(CONFIG_KEYS.UI)) || {}
+    await config.set(CONFIG_KEYS.UI, {
       ...currentUi,
       theme: theme.value
     })
 
     // Get current behavior and update only rememberLastFolder
-    const currentBehavior = (await config.get('behavior')) || {}
-    await config.set('behavior', {
+    const currentBehavior = (await config.get(CONFIG_KEYS.BEHAVIOR)) || {}
+    await config.set(CONFIG_KEYS.BEHAVIOR, {
       ...currentBehavior,
       rememberLastFolder: rememberLastFolder.value
     })
 
     // Get current features and update veilKey
-    const currentFeatures = (await config.get('features')) || {}
-    await config.set('features', {
+    const currentFeatures = (await config.get(CONFIG_KEYS.FEATURES)) || {}
+    await config.set(CONFIG_KEYS.FEATURES, {
       ...currentFeatures,
       veilKey: veilKey.value
     })
 
     // Dispatch event to notify app of theme/settings change
-    window.dispatchEvent(new CustomEvent('theme-updated'))
-    window.dispatchEvent(new CustomEvent('settings-updated'))
+    window.dispatchEvent(new CustomEvent(EVENTS.THEME_UPDATED))
+    window.dispatchEvent(new CustomEvent(EVENTS.SETTINGS_UPDATED))
 
-    alert('Settings saved successfully!')
+    // Close dialog after successful save
     hide()
   } catch (error) {
-    alert(`Error saving settings: ${error}`)
+    await showError(`Error saving settings: ${error}`)
   }
 }
 
 // Reset to defaults
 const resetToDefaults = async (): Promise<void> => {
-  if (confirm('Are you sure you want to reset these settings to defaults?')) {
+  const confirmed = await showConfirm(
+    'Are you sure you want to reset these settings to defaults?',
+    'Reset Settings',
+    'Reset',
+    'Cancel'
+  )
+
+  if (confirmed) {
     try {
-      fontSize.value = 14
-      lineHeight.value = 1.6
-      theme.value = 'dark'
-      rememberLastFolder.value = true
-      veilKey.value = 'Shift + F12'
+      fontSize.value = DEFAULTS.FONT_SIZE
+      lineHeight.value = DEFAULTS.LINE_HEIGHT
+      theme.value = DEFAULTS.THEME
+      rememberLastFolder.value = DEFAULTS.REMEMBER_LAST_FOLDER
+      veilKey.value = DEFAULTS.VEIL_KEY
+      // saveSettings() will close the dialog automatically
       await saveSettings()
-      alert('Settings reset to defaults!')
     } catch (error) {
-      alert(`Error resetting settings: ${error}`)
+      await showError(`Error resetting settings: ${error}`)
     }
   }
 }
@@ -129,8 +140,8 @@ defineExpose({
                 id="fontSize"
                 v-model.number="fontSize"
                 type="number"
-                min="10"
-                max="24"
+                :min="10"
+                :max="24"
                 class="input-number"
               />
             </div>
@@ -140,9 +151,9 @@ defineExpose({
                 id="lineHeight"
                 v-model.number="lineHeight"
                 type="number"
-                min="1"
-                max="3"
-                step="0.1"
+                :min="1"
+                :max="3"
+                :step="0.1"
                 class="input-number"
               />
             </div>

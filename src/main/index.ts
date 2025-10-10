@@ -53,6 +53,50 @@ function createWindow(): void {
     mainWindow?.show()
   })
 
+  // Handle window close - check for unsaved changes
+  mainWindow.on('close', async (event) => {
+    if (!mainWindow) return
+
+    // Prevent the window from closing immediately
+    event.preventDefault()
+
+    // Check if there are unsaved changes
+    const hasUnsaved = await mainWindow.webContents.executeJavaScript(
+      'window.__hasUnsavedChanges ? window.__hasUnsavedChanges() : false'
+    )
+
+    if (hasUnsaved) {
+      // Show dialog asking what to do
+      const choice = dialog.showMessageBoxSync(mainWindow, {
+        type: 'question',
+        buttons: ['Cancel', 'Discard Changes', 'Save and Close'],
+        defaultId: 2,
+        title: 'Unsaved Changes',
+        message: 'You have unsaved changes. What would you like to do?',
+        detail: "Your changes will be lost if you don't save them."
+      })
+
+      if (choice === 1) {
+        // Discard changes - close window
+        mainWindow.destroy()
+      } else if (choice === 2) {
+        // Save and close
+        try {
+          await mainWindow.webContents.executeJavaScript(
+            'window.__saveChanges ? window.__saveChanges() : Promise.resolve()'
+          )
+          mainWindow.destroy()
+        } catch (error) {
+          console.error('Error saving changes:', error)
+        }
+      }
+      // choice === 0 (Cancel) - do nothing, window stays open
+    } else {
+      // No unsaved changes, allow window to close
+      mainWindow.destroy()
+    }
+  })
+
   // Save window bounds when resized or moved
   mainWindow.on('resize', () => {
     if (mainWindow && !mainWindow.isMaximized() && !mainWindow.isMinimized() && configStore) {

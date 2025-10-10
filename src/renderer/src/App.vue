@@ -6,17 +6,22 @@ import { useKeyboardShortcuts } from './composables/useKeyboardShortcuts'
 import { useResizableSplitter } from './composables/useResizableSplitter'
 import { useConfig } from './composables/useConfig'
 import { useVeil } from './composables/useVeil'
+import { useTheme } from './composables/useTheme'
+import { useDialog } from './composables/useDialog'
+import { registerIpcListener } from './utils/ipc'
+import { CONFIG_KEYS, MENU_EVENTS } from './constants'
 import TopBar from './components/TopBar.vue'
 import ThumbnailList from './components/ThumbnailList.vue'
 import ImagePreview from './components/ImagePreview.vue'
 import CaptionEditor from './components/CaptionEditor.vue'
 import SettingsDialog from './components/SettingsDialog.vue'
+import AppDialog from './components/AppDialog.vue'
 
 const store = useCaptionStore()
 const config = useConfig()
+const { showConfirm } = useDialog()
 const captionEditorRef = ref<InstanceType<typeof CaptionEditor> | null>(null)
 const settingsDialogRef = ref<InstanceType<typeof SettingsDialog> | null>(null)
-const currentTheme = ref<'dark' | 'light' | 'system'>('dark')
 
 // File operations
 const { openFolder, saveCaptions, closeFolder } = useFileOperations()
@@ -31,60 +36,31 @@ const {
 // Veil feature (hide to system tray)
 useVeil()
 
+// Theme management
+useTheme()
+
 // Handle menu event for showing preferences
 const handleShowPreferences = (): void => {
   settingsDialogRef.value?.show()
 }
 
 // Handle reset changes
-const handleResetChanges = (): void => {
+const handleResetChanges = async (): Promise<void> => {
   if (!store.hasUnsavedChanges) {
-    alert('No changes to discard.')
+    await showConfirm('No changes to discard.', 'No Changes', 'OK')
     return
   }
 
-  const confirmed = confirm(
-    `Are you sure you want to discard all ${store.modifiedImages.size} unsaved changes?\n\nThis cannot be undone.`
+  const confirmed = await showConfirm(
+    `Are you sure you want to discard all ${store.modifiedImages.size} unsaved changes?\n\nThis cannot be undone.`,
+    'Discard Changes',
+    'Discard',
+    'Cancel'
   )
 
   if (confirmed) {
     store.resetChanges()
   }
-}
-
-// Theme management
-const getEffectiveTheme = (): 'dark' | 'light' => {
-  if (currentTheme.value === 'system') {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-  }
-  return currentTheme.value
-}
-
-const applyTheme = (): void => {
-  const effectiveTheme = getEffectiveTheme()
-  document.documentElement.setAttribute('data-theme', effectiveTheme)
-}
-
-// Load theme from config
-const loadTheme = async (): Promise<void> => {
-  const uiConfig = await config.get<{ theme?: 'dark' | 'light' | 'system' }>('ui')
-  if (uiConfig?.theme) {
-    currentTheme.value = uiConfig.theme
-    applyTheme()
-  }
-}
-
-// Watch for system theme changes
-const systemThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-const handleSystemThemeChange = (): void => {
-  if (currentTheme.value === 'system') {
-    applyTheme()
-  }
-}
-
-// Listen for theme updates from settings dialog
-const handleThemeUpdate = async (): Promise<void> => {
-  await loadTheme()
 }
 
 // Keyboard shortcuts
@@ -97,24 +73,11 @@ useKeyboardShortcuts({
   onShowPreferences: handleShowPreferences
 })
 
-// Warn before closing with unsaved changes
-const handleBeforeUnload = (event: BeforeUnloadEvent): void => {
-  if (store.hasUnsavedChanges) {
-    event.preventDefault()
-    event.returnValue = ''
-  }
-}
+let cleanupIpcListener: (() => void) | null = null
 
 onMounted(async () => {
-  window.addEventListener('beforeunload', handleBeforeUnload)
-
-  // Load and apply theme
-  await loadTheme()
-
   // Expose functions for tray menu
-  // @ts-ignore - Dynamic property for tray menu access
   window.__hasUnsavedChanges = () => store.hasUnsavedChanges
-  // @ts-ignore - Dynamic property for tray menu access
   window.__saveChanges = async () => {
     await saveCaptions(false)
   }
@@ -123,7 +86,7 @@ onMounted(async () => {
   const behavior = await config.get<{
     rememberLastFolder?: boolean
     lastOpenedFolder?: string
-  }>('behavior')
+  }>(CONFIG_KEYS.BEHAVIOR)
   if (behavior?.rememberLastFolder && behavior?.lastOpenedFolder) {
     try {
       // Simulate opening the last folder
@@ -137,30 +100,14 @@ onMounted(async () => {
     }
   }
 
-  // Listen for system theme changes
-  systemThemeMediaQuery.addEventListener('change', handleSystemThemeChange)
-
-  // Listen for theme updates from settings (custom event)
-  window.addEventListener('theme-updated', handleThemeUpdate)
-
   // Listen for preferences menu event
-  // @ts-ignore - Electron IPC types not fully defined in window
-  if (window.electron?.ipcRenderer) {
-    // @ts-ignore - Custom IPC method defined in preload
-    window.electron.ipcRenderer.on('menu:show-preferences', handleShowPreferences)
-  }
+  cleanupIpcListener = registerIpcListener(MENU_EVENTS.SHOW_PREFERENCES, handleShowPreferences)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('beforeunload', handleBeforeUnload)
-  systemThemeMediaQuery.removeEventListener('change', handleSystemThemeChange)
-  window.removeEventListener('theme-updated', handleThemeUpdate)
-
-  // Clean up preferences listener
-  // @ts-ignore - Electron IPC types not fully defined in window
-  if (window.electron?.ipcRenderer?.removeAllListeners) {
-    // @ts-ignore - Custom IPC method defined in preload
-    window.electron.ipcRenderer.removeAllListeners('menu:show-preferences')
+  // Clean up IPC listener
+  if (cleanupIpcListener) {
+    cleanupIpcListener()
   }
 })
 </script>
@@ -185,6 +132,9 @@ onUnmounted(() => {
 
     <!-- Settings Dialog -->
     <SettingsDialog ref="settingsDialogRef" />
+
+    <!-- App Dialog -->
+    <AppDialog />
   </div>
 </template>
 

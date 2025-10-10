@@ -1,5 +1,6 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useConfig } from './useConfig'
+import { DEFAULTS, CONSTRAINTS, CONFIG_KEYS } from '../constants'
 
 interface ResizableSplitterOptions {
   defaultWidth?: number
@@ -20,10 +21,10 @@ export function useResizableSplitter(options: ResizableSplitterOptions = {}): {
   maxWidth: number
 } {
   const {
-    defaultWidth = 280,
-    minWidth = 200,
-    maxWidth = 600,
-    configKey = 'thumbnailPanelWidth'
+    defaultWidth = DEFAULTS.THUMBNAIL_WIDTH,
+    minWidth = CONSTRAINTS.THUMBNAIL_MIN_WIDTH,
+    maxWidth = CONSTRAINTS.THUMBNAIL_MAX_WIDTH,
+    configKey = CONFIG_KEYS.THUMBNAIL_PANEL_WIDTH
   } = options
 
   const config = useConfig()

@@ -1,5 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import type { Ref, ComputedRef } from 'vue'
+import { DEFAULTS } from '../constants'
 
 interface ImageZoomOptions {
   minZoom?: number
@@ -27,7 +28,7 @@ export function useImageZoom(options: ImageZoomOptions): {
   handleMouseLeave: () => void
   resetZoom: () => void
 } {
-  const { minZoom = 1, maxZoom = 5, currentImage } = options
+  const { minZoom = DEFAULTS.MIN_ZOOM, maxZoom = DEFAULTS.MAX_ZOOM, currentImage } = options
 
   const zoom = ref(1)
   const transformOrigin = ref('center center')

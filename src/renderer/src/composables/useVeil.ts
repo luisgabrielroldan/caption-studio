@@ -1,59 +1,18 @@
 import { onMounted, onUnmounted, ref, Ref } from 'vue'
 import { useConfig } from './useConfig'
+import { matchesKeyCombination } from '../utils/keyboard'
+import { CONFIG_KEYS, DEFAULTS, EVENTS } from '../constants'
 
 /**
  * Composable for handling the Veil feature (hide to system tray)
  */
 export function useVeil(): { veilKey: Ref<string> } {
   const config = useConfig()
-  const veilKey = ref('Shift + F12')
+  const veilKey = ref(DEFAULTS.VEIL_KEY)
 
   // Parse key combination string and check if event matches
   const matchesVeilKey = (event: KeyboardEvent): boolean => {
-    const combination = veilKey.value
-    if (!combination) return false
-
-    const parts = combination.split(' + ').map((p) => p.trim())
-    const mainKey = parts[parts.length - 1]
-    const modifiers = parts.slice(0, -1)
-
-    // Check modifiers
-    const hasCtrl = modifiers.some((m) => m === 'Ctrl' || m === 'Cmd')
-    const hasShift = modifiers.includes('Shift')
-    const hasAlt = modifiers.includes('Alt')
-
-    const eventHasCtrl = event.ctrlKey || event.metaKey
-    const eventHasShift = event.shiftKey
-    const eventHasAlt = event.altKey
-
-    if (hasCtrl !== eventHasCtrl) return false
-    if (hasShift !== eventHasShift) return false
-    if (hasAlt !== eventHasAlt) return false
-
-    // Check main key
-    let eventKey = event.key
-
-    // Map special keys
-    const keyMap: Record<string, string> = {
-      ' ': 'Space',
-      ArrowUp: '↑',
-      ArrowDown: '↓',
-      ArrowLeft: '←',
-      ArrowRight: '→',
-      Escape: 'Esc',
-      Enter: 'Enter',
-      Backspace: 'Backspace',
-      Delete: 'Del',
-      Tab: 'Tab'
-    }
-
-    if (keyMap[eventKey]) {
-      eventKey = keyMap[eventKey]
-    } else if (eventKey.length === 1) {
-      eventKey = eventKey.toUpperCase()
-    }
-
-    return eventKey === mainKey
+    return matchesKeyCombination(veilKey.value, event)
   }
 
   const handleKeyDown = async (event: KeyboardEvent): Promise<void> => {
@@ -76,7 +35,7 @@ export function useVeil(): { veilKey: Ref<string> } {
 
   // Load veil key configuration
   const loadVeilKey = async (): Promise<void> => {
-    const features = await config.get<{ veilKey?: string }>('features')
+    const features = await config.get<{ veilKey?: string }>(CONFIG_KEYS.FEATURES)
     if (features?.veilKey) {
       veilKey.value = features.veilKey
     }
@@ -90,12 +49,12 @@ export function useVeil(): { veilKey: Ref<string> } {
   onMounted(async () => {
     await loadVeilKey()
     window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('settings-updated', handleSettingsUpdated)
+    window.addEventListener(EVENTS.SETTINGS_UPDATED, handleSettingsUpdated)
   })
 
   onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown)
-    window.removeEventListener('settings-updated', handleSettingsUpdated)
+    window.removeEventListener(EVENTS.SETTINGS_UPDATED, handleSettingsUpdated)
   })
 
   return {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { buildKeyCombination } from '../utils/keyboard'
 
 interface Props {
   modelValue: string
@@ -45,45 +46,7 @@ const handleKeyDown = (event: KeyboardEvent): void => {
     return
   }
 
-  const parts: string[] = []
-
-  // Build the key combination string
-  if (event.ctrlKey || event.metaKey) {
-    parts.push(event.metaKey && navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl')
-  }
-  if (event.shiftKey) {
-    parts.push('Shift')
-  }
-  if (event.altKey) {
-    parts.push('Alt')
-  }
-
-  // Format the main key
-  let mainKey = event.key
-
-  // Special key formatting
-  const keyMap: Record<string, string> = {
-    ' ': 'Space',
-    ArrowUp: '↑',
-    ArrowDown: '↓',
-    ArrowLeft: '←',
-    ArrowRight: '→',
-    Escape: 'Esc',
-    Enter: 'Enter',
-    Backspace: 'Backspace',
-    Delete: 'Del',
-    Tab: 'Tab'
-  }
-
-  if (keyMap[mainKey]) {
-    mainKey = keyMap[mainKey]
-  } else if (mainKey.length === 1) {
-    mainKey = mainKey.toUpperCase()
-  }
-
-  parts.push(mainKey)
-
-  const combination = parts.join(' + ')
+  const combination = buildKeyCombination(event)
   emit('update:modelValue', combination)
 
   isRecording.value = false

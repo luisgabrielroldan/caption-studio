@@ -1,5 +1,7 @@
 import { onMounted, onUnmounted } from 'vue'
 import { useCaptionStore } from '../stores/captionStore'
+import { registerIpcListeners } from '../utils/ipc'
+import { MENU_EVENTS } from '../constants'
 
 interface KeyboardShortcutsOptions {
   onFocusEditor?: () => void
@@ -17,48 +19,37 @@ interface KeyboardShortcutsOptions {
  */
 export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}): void {
   const store = useCaptionStore()
+  let cleanupIpcListeners: (() => void) | null = null
 
   // Handle menu events from main process
   const handleMenuEvents = (): void => {
-    // @ts-ignore - Electron IPC types not fully defined in window
-    if (window.electron?.ipcRenderer) {
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.on('menu:open-folder', options.onOpenFolder || (() => {}))
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.on('menu:open-recent-folder', async (folderPath: string) => {
-        if (options.onOpenFolder) {
+    cleanupIpcListeners = registerIpcListeners({
+      [MENU_EVENTS.OPEN_FOLDER]: options.onOpenFolder || (() => {}),
+      [MENU_EVENTS.OPEN_RECENT_FOLDER]: async (...args: unknown[]) => {
+        const folderPath = args[0] as string
+        if (options.onOpenFolder && folderPath) {
           // For recent folders, we pass the path directly to the API
           const result = await window.api.openFolder(folderPath)
           if (result) {
             // Use the store directly since we're bypassing the composable
-            const { useCaptionStore } = await import('../stores/captionStore')
-            const store = useCaptionStore()
             store.setFolderPath(result.folderPath)
             store.setImages(result.images)
           }
         }
-      })
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.on('menu:save-captions', options.onSaveCaptions || (() => {}))
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.on('menu:reset-changes', options.onResetChanges || (() => {}))
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.on('menu:close-folder', options.onCloseFolder || (() => {}))
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.on('menu:previous-image', () => store.previousImage())
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.on('menu:next-image', () => store.nextImage())
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.on('menu:first-image', () => {
+      },
+      [MENU_EVENTS.SAVE_CAPTIONS]: options.onSaveCaptions || (() => {}),
+      [MENU_EVENTS.RESET_CHANGES]: options.onResetChanges || (() => {}),
+      [MENU_EVENTS.CLOSE_FOLDER]: options.onCloseFolder || (() => {}),
+      [MENU_EVENTS.PREVIOUS_IMAGE]: () => store.previousImage(),
+      [MENU_EVENTS.NEXT_IMAGE]: () => store.nextImage(),
+      [MENU_EVENTS.FIRST_IMAGE]: () => {
         if (store.totalImages > 0) store.setCurrentIndex(0)
-      })
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.on('menu:last-image', () => {
+      },
+      [MENU_EVENTS.LAST_IMAGE]: () => {
         if (store.totalImages > 0) store.setCurrentIndex(store.totalImages - 1)
-      })
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.on('menu:focus-editor', options.onFocusEditor || (() => {}))
-    }
+      },
+      [MENU_EVENTS.FOCUS_EDITOR]: options.onFocusEditor || (() => {})
+    })
   }
 
   const handleKeyDown = async (event: KeyboardEvent): Promise<void> => {
@@ -150,28 +141,8 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}): vo
   onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown)
     // Clean up menu event listeners
-    // @ts-ignore - Electron IPC types not fully defined in window
-    if (window.electron?.ipcRenderer?.removeAllListeners) {
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.removeAllListeners('menu:open-folder')
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.removeAllListeners('menu:open-recent-folder')
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.removeAllListeners('menu:save-captions')
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.removeAllListeners('menu:reset-changes')
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.removeAllListeners('menu:close-folder')
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.removeAllListeners('menu:previous-image')
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.removeAllListeners('menu:next-image')
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.removeAllListeners('menu:first-image')
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.removeAllListeners('menu:last-image')
-      // @ts-ignore - Custom IPC method defined in preload
-      window.electron.ipcRenderer.removeAllListeners('menu:focus-editor')
+    if (cleanupIpcListeners) {
+      cleanupIpcListeners()
     }
   })
 }
