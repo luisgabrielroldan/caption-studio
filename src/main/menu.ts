@@ -68,18 +68,14 @@ export function createApplicationMenu(mainWindow: BrowserWindow | null): void {
           }
         },
         { type: 'separator' },
-        ...(isMac
-          ? [
-              {
-                label: 'Preferences...',
-                accelerator: 'Cmd+,',
-                click: () => {
-                  mainWindow?.webContents.send('menu:show-preferences')
-                }
-              },
-              { type: 'separator' as const }
-            ]
-          : []),
+        {
+          label: 'Preferences...',
+          accelerator: 'CmdOrCtrl+,',
+          click: () => {
+            mainWindow?.webContents.send('menu:show-preferences')
+          }
+        },
+        { type: 'separator' },
         isMac ? { role: 'close' as const } : { role: 'quit' as const }
       ]
     },
