@@ -8,6 +8,7 @@ export interface ImageItem {
   captionPath: string // path to caption file
   originalCaption: string // caption loaded from disk
   currentCaption: string // current caption in editor
+  size: number // file size in bytes
 }
 
 export const useCaptionStore = defineStore('caption', () => {
@@ -34,6 +35,10 @@ export const useCaptionStore = defineStore('caption', () => {
   })
 
   const totalImages = computed(() => images.value.length)
+
+  const totalSize = computed(() => {
+    return images.value.reduce((sum, img) => sum + img.size, 0)
+  })
 
   const hasImages = computed(() => images.value.length > 0)
 
@@ -100,6 +105,7 @@ export const useCaptionStore = defineStore('caption', () => {
     hasUnsavedChanges,
     modifiedImages,
     totalImages,
+    totalSize,
     hasImages,
     // Actions
     setImages,

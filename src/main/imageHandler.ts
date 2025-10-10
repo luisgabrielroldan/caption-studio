@@ -11,6 +11,7 @@ interface ImageData {
   captionPath: string
   originalCaption: string
   currentCaption: string
+  size: number // File size in bytes
 }
 
 interface CaptionUpdate {
@@ -48,13 +49,24 @@ async function findImages(dirPath: string): Promise<ImageData[]> {
               caption = ''
             }
 
+            // Get file size
+            let fileSize = 0
+            try {
+              const stats = await fs.stat(fullPath)
+              fileSize = stats.size
+            } catch {
+              // If we can't get size, default to 0
+              fileSize = 0
+            }
+
             images.push({
               id: fullPath, // Using full path as unique ID
               path: fullPath,
               filename: entry.name,
               captionPath,
               originalCaption: caption,
-              currentCaption: caption
+              currentCaption: caption,
+              size: fileSize
             })
           }
         }

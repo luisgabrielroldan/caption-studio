@@ -1,7 +1,14 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useCaptionStore } from '../stores/captionStore'
+import { formatFileSize } from '../utils/formatters'
 
 const store = useCaptionStore()
+
+const formattedDatasetSize = computed(() => {
+  if (store.totalSize === 0) return ''
+  return formatFileSize(store.totalSize)
+})
 </script>
 
 <template>
@@ -9,7 +16,10 @@ const store = useCaptionStore()
     <div class="left-section">
       <div class="app-title">
         <span class="app-name">Caption Studio</span>
-        <span v-if="store.hasImages" class="image-count">{{ store.totalImages }} images</span>
+        <span v-if="store.hasImages" class="image-count">
+          {{ store.totalImages }} images
+          <span v-if="formattedDatasetSize" class="dataset-size">· {{ formattedDatasetSize }}</span>
+        </span>
       </div>
       <div v-if="store.folderPath" class="folder-info">
         <span class="folder-icon">📁</span>
@@ -73,6 +83,13 @@ const store = useCaptionStore()
   padding: 2px 8px;
   background: var(--bg-hover);
   border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dataset-size {
+  opacity: 0.7;
 }
 
 .folder-info {
