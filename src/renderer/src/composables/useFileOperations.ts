@@ -75,6 +75,11 @@ export function useFileOperations(): {
       if (!confirmed) return false
     }
     store.clearAll()
+
+    // Clear last opened folder so it doesn't auto-open next time
+    // Auto-open should only happen when the app is closed with a folder still open
+    await config.set(CONFIG_KEYS.BEHAVIOR_LAST_OPENED_FOLDER, '')
+
     return true
   }
 

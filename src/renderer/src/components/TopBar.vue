@@ -2,16 +2,28 @@
 import { computed } from 'vue'
 import { useCaptionStore } from '../stores/captionStore'
 import { formatFileSize } from '../utils/formatters'
+import { useDialog } from '../composables/useDialog'
 
 const store = useCaptionStore()
+const { showConfirm } = useDialog()
 
 const formattedDatasetSize = computed(() => {
   if (store.totalSize === 0) return ''
   return formatFileSize(store.totalSize)
 })
 
-const discardAllChanges = (): void => {
-  store.resetChanges()
+const discardAllChanges = async (): Promise<void> => {
+  const count = Array.from(store.modifiedImages).length
+  const confirmed = await showConfirm(
+    `Are you sure you want to discard changes to ${count} image${count > 1 ? 's' : ''}? This cannot be undone.`,
+    'Discard All Changes',
+    'Discard',
+    'Cancel'
+  )
+
+  if (confirmed) {
+    store.resetChanges()
+  }
 }
 </script>
 
