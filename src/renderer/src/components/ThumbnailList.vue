@@ -16,7 +16,7 @@ watch(
     if (newIndex >= 0 && thumbnailRefs.value[newIndex]) {
       await nextTick()
       thumbnailRefs.value[newIndex].scrollIntoView({
-        behavior: 'smooth',
+        behavior: 'auto',
         block: 'nearest'
       })
     }
@@ -44,7 +44,7 @@ watch(
         :title="image.filename"
       >
         <div class="thumbnail-wrapper">
-          <img :src="`local-image://${encodeURIComponent(image.path)}`" :alt="image.filename" />
+          <img :src="`local-image://${encodeURIComponent(image.path)}`" :alt="image.filename" draggable="false" />
           <div v-if="store.modifiedImages.has(image.id)" class="modified-indicator">●</div>
         </div>
       </div>

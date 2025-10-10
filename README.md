@@ -29,9 +29,18 @@ A powerful Electron-based application for managing image captions in training da
 ### Navigation
 - `↑` or `K`: Previous image
 - `↓` or `J`: Next image
+- `Home`: Jump to first image
+- `End`: Jump to last image
 - `Ctrl/Cmd + Enter`: Toggle focus between navigation and caption editor
 - `Tab`: Focus caption editor
 - `Escape`: Unfocus caption editor (return to navigation mode)
+
+### Image Viewing
+- `Mouse Wheel` (over image): Zoom in/out (100% to 500%, zoom centered on mouse position)
+- `Click & Drag` (when zoomed): Pan around the zoomed image (cursor changes to hand)
+- `Reset Zoom Button`: Click to return to 100% zoom (appears when zoomed)
+- **Pan boundaries**: Panning is constrained to image edges (no empty space visible)
+- **Auto-scroll thumbnails**: The thumbnail list automatically scrolls to keep selected image visible
 
 ### Actions
 - `Ctrl/Cmd + O`: Open folder

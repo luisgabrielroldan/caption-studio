@@ -30,6 +30,22 @@ const handleKeyDown = async (event: KeyboardEvent) => {
       store.nextImage()
     }
   }
+  // Home/End to jump to first/last image
+  else if (event.key === 'Home') {
+    if (!isTextInput || event.ctrlKey || event.metaKey) {
+      event.preventDefault()
+      if (store.totalImages > 0) {
+        store.setCurrentIndex(0)
+      }
+    }
+  } else if (event.key === 'End') {
+    if (!isTextInput || event.ctrlKey || event.metaKey) {
+      event.preventDefault()
+      if (store.totalImages > 0) {
+        store.setCurrentIndex(store.totalImages - 1)
+      }
+    }
+  }
   // Tab to focus caption editor
   else if (event.key === 'Tab' && !isTextInput) {
     event.preventDefault()
