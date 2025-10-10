@@ -9,6 +9,35 @@ import CaptionEditor from './components/CaptionEditor.vue'
 const store = useCaptionStore()
 const captionEditorRef = ref<InstanceType<typeof CaptionEditor> | null>(null)
 
+// Resizable panel state
+const thumbnailWidth = ref(280) // Default width in pixels
+const minWidth = 200
+const maxWidth = 600
+const isDraggingSplitter = ref(false)
+
+// Splitter drag handlers
+const handleSplitterMouseDown = (event: MouseEvent) => {
+  isDraggingSplitter.value = true
+  event.preventDefault()
+}
+
+const handleMouseMove = (event: MouseEvent) => {
+  if (!isDraggingSplitter.value) return
+  
+  const newWidth = event.clientX
+  if (newWidth >= minWidth && newWidth <= maxWidth) {
+    thumbnailWidth.value = newWidth
+  }
+}
+
+const handleMouseUp = () => {
+  if (isDraggingSplitter.value) {
+    isDraggingSplitter.value = false
+    // Save width to localStorage
+    localStorage.setItem('thumbnailPanelWidth', thumbnailWidth.value.toString())
+  }
+}
+
 // Keyboard shortcuts handler
 const handleKeyDown = async (event: KeyboardEvent) => {
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
@@ -114,21 +143,40 @@ const handleBeforeUnload = (event: BeforeUnloadEvent) => {
 }
 
 onMounted(() => {
+  const savedWidth = localStorage.getItem('thumbnailPanelWidth')
+  if (savedWidth) {
+    const width = parseInt(savedWidth, 10)
+    if (!isNaN(width) && width >= minWidth && width <= maxWidth) {
+      thumbnailWidth.value = width
+    }
+  }
+  
   window.addEventListener('keydown', handleKeyDown)
   window.addEventListener('beforeunload', handleBeforeUnload)
+  window.addEventListener('mousemove', handleMouseMove)
+  window.addEventListener('mouseup', handleMouseUp)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
   window.removeEventListener('beforeunload', handleBeforeUnload)
+  window.removeEventListener('mousemove', handleMouseMove)
+  window.removeEventListener('mouseup', handleMouseUp)
 })
 </script>
 
 <template>
-  <div class="app-container">
+  <div class="app-container" :class="{ 'dragging-splitter': isDraggingSplitter }">
     <TopBar />
     <div class="main-content">
-      <ThumbnailList />
+      <div class="thumbnail-panel" :style="{ width: `${thumbnailWidth}px` }">
+        <ThumbnailList />
+      </div>
+      <div 
+        class="splitter" 
+        :class="{ dragging: isDraggingSplitter }"
+        @mousedown="handleSplitterMouseDown"
+      ></div>
       <div class="content-area">
         <ImagePreview />
         <CaptionEditor ref="captionEditorRef" />
@@ -147,11 +195,37 @@ onUnmounted(() => {
   color: #fff;
 }
 
+.app-container.dragging-splitter {
+  cursor: col-resize;
+  user-select: none;
+}
+
 .main-content {
   display: flex;
   flex: 1;
   overflow: hidden;
   min-height: 0;
+}
+
+.thumbnail-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 200px;
+  max-width: 600px;
+}
+
+.splitter {
+  width: 4px;
+  background: #2a2a2a;
+  cursor: col-resize;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.splitter:hover,
+.splitter.dragging {
+  background: #4a9eff;
 }
 
 .content-area {

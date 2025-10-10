@@ -54,10 +54,9 @@ watch(
 
 <style scoped>
 .thumbnail-list {
-  width: 280px;
+  width: 100%;
   height: 100%;
   background: #1e1e1e;
-  border-right: 1px solid #333;
   overflow-y: auto;
   overflow-x: hidden;
 }
