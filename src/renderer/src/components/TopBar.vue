@@ -1,46 +1,12 @@
 <script setup lang="ts">
 import { useCaptionStore } from '../stores/captionStore'
-import { ref } from 'vue'
+import { useFileOperations } from '../composables/useFileOperations'
 
 const store = useCaptionStore()
-const isSaving = ref(false)
-
-const openFolder = async () => {
-  const result = await window.api.openFolder()
-  if (result) {
-    store.setFolderPath(result.folderPath)
-    store.setImages(result.images)
-  }
-}
+const { isSaving, openFolder, saveCaptions, closeFolder } = useFileOperations()
 
 const saveAllCaptions = async () => {
-  if (!store.hasUnsavedChanges) return
-
-  isSaving.value = true
-  try {
-    const updates = store.images
-      .filter(img => img.originalCaption !== img.currentCaption)
-      .map(img => ({
-        captionPath: img.captionPath,
-        caption: img.currentCaption
-      }))
-
-    await window.api.saveCaptions(updates)
-    store.markAsSaved()
-    alert('All captions saved successfully!')
-  } catch (error) {
-    alert(`Error saving captions: ${error}`)
-  } finally {
-    isSaving.value = false
-  }
-}
-
-const closeFolder = () => {
-  if (store.hasUnsavedChanges) {
-    const confirmed = confirm('You have unsaved changes. Are you sure you want to close?')
-    if (!confirmed) return
-  }
-  store.clearAll()
+  await saveCaptions(true) // Show alert on success
 }
 </script>
 

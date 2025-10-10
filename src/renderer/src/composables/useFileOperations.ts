@@ -1,0 +1,66 @@
+import { ref } from 'vue'
+import { useCaptionStore } from '../stores/captionStore'
+
+/**
+ * Composable for file operations (open, save, close)
+ * Centralizes file operation logic used by multiple components
+ */
+export function useFileOperations() {
+  const store = useCaptionStore()
+  const isSaving = ref(false)
+
+  const openFolder = async () => {
+    const result = await window.api.openFolder()
+    if (result) {
+      store.setFolderPath(result.folderPath)
+      store.setImages(result.images)
+    }
+    return result
+  }
+
+  const saveCaptions = async (showAlert = false) => {
+    if (!store.hasUnsavedChanges) return false
+
+    isSaving.value = true
+    try {
+      const updates = store.images
+        .filter((img) => img.originalCaption !== img.currentCaption)
+        .map((img) => ({
+          captionPath: img.captionPath,
+          caption: img.currentCaption
+        }))
+
+      await window.api.saveCaptions(updates)
+      store.markAsSaved()
+
+      if (showAlert) {
+        alert('All captions saved successfully!')
+      }
+      return true
+    } catch (error) {
+      const message = `Error saving captions: ${error}`
+      alert(message)
+      console.error(message)
+      return false
+    } finally {
+      isSaving.value = false
+    }
+  }
+
+  const closeFolder = () => {
+    if (store.hasUnsavedChanges) {
+      const confirmed = confirm('You have unsaved changes. Are you sure you want to close?')
+      if (!confirmed) return false
+    }
+    store.clearAll()
+    return true
+  }
+
+  return {
+    isSaving,
+    openFolder,
+    saveCaptions,
+    closeFolder
+  }
+}
+
