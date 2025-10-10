@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron'
+import { updateApplicationMenu } from './menu'
 
 // Define the configuration schema with types and defaults
 interface ConfigSchema {
@@ -86,6 +87,15 @@ async function initStore(): Promise<any> {
 // Export store initialization function
 export { initStore, store }
 
+// Get store (ensure it's initialized)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getStore(): Promise<any> {
+  if (!store) {
+    await initStore()
+  }
+  return store
+}
+
 // Register IPC handlers for config access
 export async function registerConfigHandlers(): Promise<void> {
   // Ensure store is initialized
@@ -115,7 +125,7 @@ export async function registerConfigHandlers(): Promise<void> {
   })
 
   // Add to recent folders
-  ipcMain.handle('config:add-recent-folder', (_event, folderPath: string) => {
+  ipcMain.handle('config:add-recent-folder', async (_event, folderPath: string) => {
     const recentFolders = store.get('recentFolders')
     const maxRecent = store.get('maxRecentFolders')
 
@@ -129,12 +139,22 @@ export async function registerConfigHandlers(): Promise<void> {
     const updated = filtered.slice(0, maxRecent)
 
     store.set('recentFolders', updated)
+
+    // Update the application menu to reflect the new recent folders
+    await updateApplicationMenu()
+
     return updated
   })
 
   // Get recent folders
   ipcMain.handle('config:get-recent-folders', () => {
     return store.get('recentFolders')
+  })
+
+  // Clear recent folders
+  ipcMain.handle('config:clear-recent-folders', () => {
+    store.set('recentFolders', [])
+    return []
   })
 
   // Update window bounds

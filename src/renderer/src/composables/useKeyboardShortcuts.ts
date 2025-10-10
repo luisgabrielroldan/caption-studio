@@ -25,6 +25,20 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}): vo
       // @ts-ignore - Custom IPC method defined in preload
       window.electron.ipcRenderer.on('menu:open-folder', options.onOpenFolder || (() => {}))
       // @ts-ignore - Custom IPC method defined in preload
+      window.electron.ipcRenderer.on('menu:open-recent-folder', async (folderPath: string) => {
+        if (options.onOpenFolder) {
+          // For recent folders, we pass the path directly to the API
+          const result = await window.api.openFolder(folderPath)
+          if (result) {
+            // Use the store directly since we're bypassing the composable
+            const { useCaptionStore } = await import('../stores/captionStore')
+            const store = useCaptionStore()
+            store.setFolderPath(result.folderPath)
+            store.setImages(result.images)
+          }
+        }
+      })
+      // @ts-ignore - Custom IPC method defined in preload
       window.electron.ipcRenderer.on('menu:save-captions', options.onSaveCaptions || (() => {}))
       // @ts-ignore - Custom IPC method defined in preload
       window.electron.ipcRenderer.on('menu:reset-changes', options.onResetChanges || (() => {}))
@@ -140,6 +154,8 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}): vo
     if (window.electron?.ipcRenderer?.removeAllListeners) {
       // @ts-ignore - Custom IPC method defined in preload
       window.electron.ipcRenderer.removeAllListeners('menu:open-folder')
+      // @ts-ignore - Custom IPC method defined in preload
+      window.electron.ipcRenderer.removeAllListeners('menu:open-recent-folder')
       // @ts-ignore - Custom IPC method defined in preload
       window.electron.ipcRenderer.removeAllListeners('menu:save-captions')
       // @ts-ignore - Custom IPC method defined in preload

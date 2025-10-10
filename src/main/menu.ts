@@ -1,7 +1,51 @@
 import { Menu, BrowserWindow, app, shell } from 'electron'
+import { getStore } from './config'
 
-export function createApplicationMenu(mainWindow: BrowserWindow | null): void {
+let currentMainWindow: BrowserWindow | null = null
+
+async function getRecentFolders(): Promise<string[]> {
+  try {
+    const store = await getStore()
+    return store.get('recentFolders')
+  } catch (error) {
+    console.error('Failed to get recent folders:', error)
+    return []
+  }
+}
+
+function buildRecentFoldersSubmenu(recentFolders: string[]): Electron.MenuItemConstructorOptions[] {
+  if (recentFolders.length === 0) {
+    return [
+      {
+        label: 'No recent folders',
+        enabled: false
+      }
+    ]
+  }
+
+  return [
+    ...recentFolders.map((folderPath) => ({
+      label: folderPath,
+      click: () => {
+        currentMainWindow?.webContents.send('menu:open-recent-folder', folderPath)
+      }
+    })),
+    { type: 'separator' as const },
+    {
+      label: 'Clear Recent Folders',
+      click: async () => {
+        const store = await getStore()
+        store.set('recentFolders', [])
+        updateApplicationMenu()
+      }
+    }
+  ]
+}
+
+export async function createApplicationMenu(mainWindow: BrowserWindow | null): Promise<void> {
+  currentMainWindow = mainWindow
   const isMac = process.platform === 'darwin'
+  const recentFolders = await getRecentFolders()
 
   const template: Electron.MenuItemConstructorOptions[] = [
     // App Menu (macOS only)
@@ -37,12 +81,7 @@ export function createApplicationMenu(mainWindow: BrowserWindow | null): void {
         },
         {
           label: 'Open Recent',
-          submenu: [
-            {
-              label: 'Recent folders will appear here',
-              enabled: false
-            }
-          ]
+          submenu: buildRecentFoldersSubmenu(recentFolders)
         },
         { type: 'separator' },
         {
@@ -204,4 +243,10 @@ export function createApplicationMenu(mainWindow: BrowserWindow | null): void {
 
   const menu = Menu.buildFromTemplate(template)
   Menu.setApplicationMenu(menu)
+}
+
+export async function updateApplicationMenu(): Promise<void> {
+  if (currentMainWindow) {
+    await createApplicationMenu(currentMainWindow)
+  }
 }

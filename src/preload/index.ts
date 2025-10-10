@@ -28,6 +28,7 @@ const electron = {
       // Whitelist of allowed channels
       const validChannels = [
         'menu:open-folder',
+        'menu:open-recent-folder',
         'menu:save-captions',
         'menu:reset-changes',
         'menu:close-folder',
