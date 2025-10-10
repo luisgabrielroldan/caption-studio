@@ -1,5 +1,5 @@
 import { ref, computed, watch } from 'vue'
-import type { Ref } from 'vue'
+import type { Ref, ComputedRef } from 'vue'
 
 interface ImageZoomOptions {
   minZoom?: number
@@ -18,11 +18,13 @@ export function useImageZoom(options: ImageZoomOptions): {
   wrapperRef: Ref<HTMLDivElement | null>
   panX: Ref<number>
   panY: Ref<number>
-  isZoomed: ReturnType<typeof computed<boolean>>
-  cursorStyle: ReturnType<typeof computed<string>>
+  isZoomed: ComputedRef<boolean>
+  cursorStyle: ComputedRef<string>
   handleWheel: (event: WheelEvent) => void
   handleMouseDown: (event: MouseEvent) => void
+  handleMouseMove: (event: MouseEvent) => void
   handleMouseUp: () => void
+  handleMouseLeave: () => void
   resetZoom: () => void
 } {
   const { minZoom = 1, maxZoom = 5, currentImage } = options
@@ -158,7 +160,6 @@ export function useImageZoom(options: ImageZoomOptions): {
     wrapperRef,
     panX,
     panY,
-    isDragging,
     isZoomed,
     cursorStyle,
     handleWheel,

@@ -15,7 +15,12 @@ const veilKey = ref('V')
 
 // Load settings from config
 const loadSettings = async (): Promise<void> => {
-  const allConfig = await config.getAll()
+  const allConfig = (await config.getAll()) as {
+    editor?: { fontSize?: number; lineHeight?: number }
+    ui?: { theme?: 'dark' | 'light' | 'system' }
+    behavior?: { rememberLastFolder?: boolean }
+    features?: { veilKey?: string }
+  }
   if (allConfig) {
     fontSize.value = allConfig.editor?.fontSize ?? 14
     lineHeight.value = allConfig.editor?.lineHeight ?? 1.6

@@ -40,7 +40,7 @@ const electron = {
         'menu:show-preferences'
       ]
       if (validChannels.includes(channel)) {
-        ipcRenderer.on(channel, (event, ...args) => func(...args))
+        ipcRenderer.on(channel, (_event, ...args) => func(...args))
       }
     },
     removeAllListeners: (channel: string) => {

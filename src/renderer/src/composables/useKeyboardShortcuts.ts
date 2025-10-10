@@ -158,8 +158,4 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}): vo
       window.electron.ipcRenderer.removeAllListeners('menu:focus-editor')
     }
   })
-
-  return {
-    handleKeyDown
-  }
 }

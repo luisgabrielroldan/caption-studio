@@ -67,7 +67,7 @@ const applyTheme = (): void => {
 
 // Load theme from config
 const loadTheme = async (): Promise<void> => {
-  const uiConfig = await config.get('ui')
+  const uiConfig = await config.get<{ theme?: 'dark' | 'light' | 'system' }>('ui')
   if (uiConfig?.theme) {
     currentTheme.value = uiConfig.theme
     applyTheme()
@@ -120,7 +120,10 @@ onMounted(async () => {
   }
 
   // Auto-open last folder if enabled
-  const behavior = await config.get('behavior')
+  const behavior = await config.get<{
+    rememberLastFolder?: boolean
+    lastOpenedFolder?: string
+  }>('behavior')
   if (behavior?.rememberLastFolder && behavior?.lastOpenedFolder) {
     try {
       // Simulate opening the last folder

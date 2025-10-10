@@ -76,7 +76,7 @@ export function useVeil(): { veilKey: Ref<string> } {
 
   // Load veil key configuration
   const loadVeilKey = async (): Promise<void> => {
-    const features = await config.get('features')
+    const features = await config.get<{ veilKey?: string }>('features')
     if (features?.veilKey) {
       veilKey.value = features.veilKey
     }

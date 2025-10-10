@@ -14,7 +14,7 @@ const lineHeight = ref(1.6)
 
 // Load editor settings
 const loadEditorSettings = async (): Promise<void> => {
-  const editorConfig = await config.get('editor')
+  const editorConfig = await config.get<{ fontSize?: number; lineHeight?: number }>('editor')
   if (editorConfig) {
     fontSize.value = editorConfig.fontSize ?? 14
     lineHeight.value = editorConfig.lineHeight ?? 1.6
