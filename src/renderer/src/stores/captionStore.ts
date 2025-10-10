@@ -98,7 +98,10 @@ export const useCaptionStore = defineStore('caption', () => {
 
   function markAsSaved(): void {
     images.value.forEach((img) => {
-      img.originalCaption = img.currentCaption
+      // Trim captions when marking as saved to ensure consistency with saved files
+      const trimmedCaption = img.currentCaption.trim()
+      img.currentCaption = trimmedCaption
+      img.originalCaption = trimmedCaption
     })
   }
 
@@ -112,7 +115,7 @@ export const useCaptionStore = defineStore('caption', () => {
 
   function toggleSelection(index: number): void {
     if (index < 0 || index >= images.value.length) return
-    
+
     if (selectedIndices.value.has(index)) {
       selectedIndices.value.delete(index)
     } else {
@@ -124,7 +127,7 @@ export const useCaptionStore = defineStore('caption', () => {
   function selectRange(fromIndex: number, toIndex: number): void {
     const start = Math.min(fromIndex, toIndex)
     const end = Math.max(fromIndex, toIndex)
-    
+
     selectedIndices.value.clear()
     for (let i = start; i <= end; i++) {
       if (i >= 0 && i < images.value.length) {
@@ -136,7 +139,7 @@ export const useCaptionStore = defineStore('caption', () => {
 
   function selectSingle(index: number): void {
     if (index < 0 || index >= images.value.length) return
-    
+
     selectedIndices.value.clear()
     selectedIndices.value.add(index)
     lastSelectedIndex.value = index

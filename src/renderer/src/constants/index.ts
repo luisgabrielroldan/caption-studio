@@ -84,7 +84,8 @@ export const DEFAULTS = {
   MIN_ZOOM: 1,
   MAX_ZOOM: 5,
   AUTO_CAPTIONER_PROVIDER: 'custom' as 'custom' | 'chatgpt',
-  AUTO_CAPTIONER_SYSTEM_PROMPT: 'Describe this image for AI training purposes. Be concise and objective.',
+  AUTO_CAPTIONER_SYSTEM_PROMPT:
+    'Describe this image for AI training purposes. Be concise and objective.',
   AUTO_CAPTIONER_TEMPERATURE: 0.7,
   AUTO_CAPTIONER_MAX_TOKENS: 300,
   AUTO_CAPTIONER_CUSTOM_BASE_URL: 'http://127.0.0.1:1234/v1',

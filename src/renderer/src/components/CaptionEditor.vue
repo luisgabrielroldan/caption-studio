@@ -50,7 +50,7 @@ const handleClickOutside = (event: MouseEvent): void => {
   const target = event.target as Node
   const clickedInDropdown = dropdownRef.value && dropdownRef.value.contains(target)
   const clickedInSubmenu = submenuRef.value && submenuRef.value.contains(target)
-  
+
   if (!clickedInDropdown && !clickedInSubmenu) {
     dropdownOpen.value = false
     submenuOpen.value = false
@@ -78,7 +78,7 @@ onUnmounted(() => {
 const getCommonCaption = (): string | null => {
   if (store.selectedImages.length === 0) return null
   if (store.selectedImages.length === 1) return store.selectedImages[0].currentCaption
-  
+
   const firstCaption = store.selectedImages[0].currentCaption
   const allSame = store.selectedImages.every((img) => img.currentCaption === firstCaption)
   return allSame ? firstCaption : null
@@ -136,7 +136,7 @@ const handleGenerateCaption = async (): Promise<void> => {
   if (store.selectedImages.length > 1) {
     // Multiple images selected - use batch generation
     await batchGenerate(store.selectedImages, 'replace', generateCaption)
-    
+
     // Refresh current caption in editor if current image was in selection
     if (store.currentImage) {
       localCaption.value = store.currentImage.currentCaption
@@ -159,7 +159,7 @@ const handleAppendCaption = async (): Promise<void> => {
   if (store.selectedImages.length > 1) {
     // Multiple images selected - use batch generation
     await batchGenerate(store.selectedImages, 'append', generateCaption)
-    
+
     // Refresh current caption in editor if current image was in selection
     if (store.currentImage) {
       localCaption.value = store.currentImage.currentCaption
@@ -178,11 +178,12 @@ const handleAppendCaption = async (): Promise<void> => {
 const placeholderText = computed(() => {
   if (store.selectedImages.length > 1) {
     const commonCaption = getCommonCaption()
-    return commonCaption === null ? '(Multiple images selected - different captions)' : 'Enter caption for this image...'
+    return commonCaption === null
+      ? '(Multiple images selected - different captions)'
+      : 'Enter caption for this image...'
   }
   return 'Enter caption for this image...'
 })
-
 
 // Toggle dropdown
 const toggleDropdown = (): void => {
@@ -199,6 +200,12 @@ const updateSubmenuPosition = (): void => {
       right: `${window.innerWidth - rect.left + 4}px`
     }
   }
+}
+
+// Handle submenu open
+const handleSubmenuOpen = (): void => {
+  submenuOpen.value = true
+  updateSubmenuPosition()
 }
 
 // Change provider
@@ -231,9 +238,7 @@ const handleProviderChange = async (provider: 'custom' | 'chatgpt'): Promise<voi
 const openAutoCaptionerSettings = (): void => {
   dropdownOpen.value = false
   // Dispatch custom event to open settings
-  window.dispatchEvent(
-    new CustomEvent('open-settings', { detail: { tab: 'autoCaptioner' } })
-  )
+  window.dispatchEvent(new CustomEvent('open-settings', { detail: { tab: 'autoCaptioner' } }))
 }
 
 // Expose focus method for parent component
@@ -304,7 +309,7 @@ defineExpose({
           >
             <span class="chevron">▼</span>
           </button>
-          
+
           <!-- Dropdown Menu -->
           <Transition name="dropdown">
             <div v-if="dropdownOpen" class="dropdown-menu">
@@ -313,11 +318,11 @@ defineExpose({
                 Append to Caption
               </button>
               <div class="dropdown-divider"></div>
-              
+
               <!-- Provider Submenu Item -->
               <div
                 class="submenu-container"
-                @mouseenter="submenuOpen = true; updateSubmenuPosition()"
+                @mouseenter="handleSubmenuOpen"
                 @mouseleave="submenuOpen = false"
               >
                 <button ref="submenuTriggerRef" class="dropdown-item submenu-trigger">
@@ -326,7 +331,7 @@ defineExpose({
                   <span class="submenu-arrow">◀</span>
                 </button>
               </div>
-              
+
               <div class="dropdown-divider"></div>
               <button class="dropdown-item" @click="openAutoCaptionerSettings">
                 <span class="dropdown-icon">⚙</span>
@@ -341,7 +346,11 @@ defineExpose({
           class="modified-badge"
           :class="{ disabled: batchProgress.isActive }"
           :disabled="batchProgress.isActive"
-          :title="batchProgress.isActive ? 'Cannot revert during batch generation' : 'Click to revert changes'"
+          :title="
+            batchProgress.isActive
+              ? 'Cannot revert during batch generation'
+              : 'Click to revert changes'
+          "
           @click="revertCaption"
         >
           <span class="badge-text">Modified</span>
@@ -382,7 +391,9 @@ defineExpose({
       ref="textareaRef"
       v-model="localCaption"
       :placeholder="placeholderText"
-      :disabled="(!store.currentImage && store.selectedImages.length === 0) || batchProgress.isActive"
+      :disabled="
+        (!store.currentImage && store.selectedImages.length === 0) || batchProgress.isActive
+      "
       class="caption-textarea"
       :style="{ fontSize: `${fontSize}px`, lineHeight: lineHeight }"
       @input="updateCaption"

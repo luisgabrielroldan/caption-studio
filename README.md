@@ -5,6 +5,7 @@ A powerful Electron-based application for managing image captions in training da
 ## Features
 
 ### Core Functionality
+
 - **Folder-based workflow**: Open any folder and recursively load all images with their captions
 - **Supported formats**: JPG, JPEG, PNG, WEBP
 - **In-memory editing**: All caption changes are kept in memory until you explicitly save
@@ -12,6 +13,7 @@ A powerful Electron-based application for managing image captions in training da
 - **Caption file format**: Text captions stored as `image_name.txt` alongside `image_name.jpg`
 
 ### User Interface
+
 - **Three-panel layout**:
   - Left: Thumbnail list with visual indicators for modified captions
   - Center: Large image preview with aspect ratio preservation
@@ -20,11 +22,13 @@ A powerful Electron-based application for managing image captions in training da
 - **Dark theme**: Easy on the eyes during long captioning sessions
 
 ### Safety Features
+
 - **Unsaved changes warning**: Prompted before closing folder or app with unsaved changes
 - **Modified counter**: Shows number of images with unsaved captions
 - **Batch save**: Save all modified captions at once
 
 ### System Tray Integration
+
 - **Veil feature**: Hide the application window to the system tray with a configurable keyboard shortcut
 - **Tray menu**: Right-click the tray icon to access "Show" and "Quit" options
 - **Unsaved changes protection**: Quitting from the tray prompts you to save if there are unsaved changes
@@ -32,6 +36,7 @@ A powerful Electron-based application for managing image captions in training da
 ## Keyboard Shortcuts
 
 ### Navigation
+
 - `↑` or `K`: Previous image
 - `↓` or `J`: Next image
 - `Home`: Jump to first image
@@ -41,6 +46,7 @@ A powerful Electron-based application for managing image captions in training da
 - `Escape`: Unfocus caption editor (return to navigation mode)
 
 ### Image Viewing
+
 - `Mouse Wheel` (over image): Zoom in/out (100% to 500%, zoom centered on mouse position)
 - `Click & Drag` (when zoomed): Pan around the zoomed image (cursor changes to hand)
 - `Reset Zoom Button`: Click to return to 100% zoom (appears when zoomed)
@@ -48,6 +54,7 @@ A powerful Electron-based application for managing image captions in training da
 - **Auto-scroll thumbnails**: The thumbnail list automatically scrolls to keep selected image visible
 
 ### Actions
+
 - `Ctrl/Cmd + O`: Open folder
 - `Ctrl/Cmd + S`: Save all captions
 - `Ctrl/Cmd + W`: Close current folder
@@ -56,6 +63,7 @@ A powerful Electron-based application for managing image captions in training da
 - `Shift + F12` (configurable): Veil to system tray (hide window)
 
 ### Fast Workflow
+
 1. Use `↑`/`↓` or `J`/`K` to navigate between images
 2. Press `Ctrl/Cmd + Enter` or `Tab` to focus the caption editor
 3. Type your caption
@@ -98,16 +106,19 @@ Access settings via `Ctrl/Cmd + ,` or the application menu. Configurable options
 ## Development
 
 ### Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### Development Mode
+
 ```bash
 npm run dev
 ```
 
 ### Build for Production
+
 ```bash
 # For macOS
 npm run build:mac

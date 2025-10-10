@@ -1,9 +1,16 @@
-import { ref } from 'vue'
+import { ref, type Ref } from 'vue'
 import { useDialog } from './useDialog'
 
 export type CaptionMode = 'replace' | 'append'
 
-export function useAutoCaptioner() {
+export function useAutoCaptioner(): {
+  isGenerating: Ref<boolean>
+  generateCaption: (
+    imagePath: string,
+    mode?: CaptionMode | string,
+    currentCaption?: string
+  ) => Promise<string | null>
+} {
   const { showError } = useDialog()
   const isGenerating = ref(false)
 
@@ -16,7 +23,7 @@ export function useAutoCaptioner() {
    */
   async function generateCaption(
     imagePath: string,
-    mode: CaptionMode = 'replace',
+    mode: CaptionMode | string = 'replace',
     currentCaption: string = ''
   ): Promise<string | null> {
     if (isGenerating.value) {
@@ -43,23 +50,24 @@ export function useAutoCaptioner() {
       return generatedCaption
     } catch (error) {
       console.error('Error generating caption:', error)
-      
+
       // Show user-friendly error message
       let errorMessage = 'Failed to generate caption.'
-      
+
       if (error instanceof Error) {
         // Extract useful error information
         if (error.message.includes('not configured')) {
           errorMessage = 'Auto-captioner is not configured. Please check your settings.'
         } else if (error.message.includes('API request failed')) {
-          errorMessage = 'Failed to connect to the captioning service. Please check your configuration.'
+          errorMessage =
+            'Failed to connect to the captioning service. Please check your configuration.'
         } else if (error.message.includes('not yet supported')) {
           errorMessage = error.message
         } else {
           errorMessage = `Failed to generate caption: ${error.message}`
         }
       }
-      
+
       await showError(errorMessage)
       return null
     } finally {
@@ -72,4 +80,3 @@ export function useAutoCaptioner() {
     generateCaption
   }
 }
-

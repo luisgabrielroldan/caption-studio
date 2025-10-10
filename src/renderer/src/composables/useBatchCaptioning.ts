@@ -1,6 +1,5 @@
-import { ref } from 'vue'
-import { useCaptionStore } from '../stores/captionStore'
-import type { ImageItem } from '../stores/captionStore'
+import { ref, type Ref } from 'vue'
+import { useCaptionStore, type ImageItem } from '../stores/captionStore'
 
 interface BatchProgress {
   isActive: boolean
@@ -14,7 +13,15 @@ interface BatchProgress {
  * Composable for batch caption generation
  * Handles progress tracking, cancellation, and state management
  */
-export function useBatchCaptioning() {
+export function useBatchCaptioning(): {
+  progress: Ref<BatchProgress>
+  batchGenerate: (
+    images: ImageItem[],
+    mode: 'replace' | 'append',
+    generateFn: (path: string, mode: string, currentCaption: string) => Promise<string | null>
+  ) => Promise<void>
+  cancel: () => void
+} {
   const store = useCaptionStore()
 
   const progress = ref<BatchProgress>({
@@ -41,7 +48,11 @@ export function useBatchCaptioning() {
   async function batchGenerate(
     images: ImageItem[],
     mode: 'replace' | 'append',
-    generateFn: (path: string, mode: 'replace' | 'append', currentCaption: string) => Promise<string | null>
+    generateFn: (
+      path: string,
+      mode: 'replace' | 'append',
+      currentCaption: string
+    ) => Promise<string | null>
   ): Promise<void> {
     if (images.length === 0) return
 
@@ -74,7 +85,7 @@ export function useBatchCaptioning() {
 
         // Generate caption
         const caption = await generateFn(image.path, mode, currentCaption)
-        
+
         if (caption !== null) {
           // Find the index and update in store
           const index = store.images.findIndex((img) => img.id === image.id)
@@ -96,4 +107,3 @@ export function useBatchCaptioning() {
     cancel
   }
 }
-

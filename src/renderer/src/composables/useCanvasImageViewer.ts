@@ -8,7 +8,7 @@ interface CanvasImageViewerOptions {
 /**
  * Canvas-based image viewer with true zoom and smooth panning
  * Renders images at actual resolution for crisp quality when zoomed
- * 
+ *
  * CRITICAL INITIALIZATION RULES:
  * 1. Canvas MUST be sized before any drawing operations
  * 2. Context transform MUST be reset before applying DPR scaling
@@ -16,7 +16,19 @@ interface CanvasImageViewerOptions {
  * 4. Always check refs exist before operations
  * 5. handleResize() sets canvas.width/height which resets context state
  */
-export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
+export function useCanvasImageViewer(options: CanvasImageViewerOptions): {
+  canvasRef: Ref<HTMLCanvasElement | null>
+  containerRef: Ref<HTMLDivElement | null>
+  zoom: Ref<number>
+  isLoading: Ref<boolean>
+  isDragging: Ref<boolean>
+  loadedImage: Ref<HTMLImageElement | null>
+  handleWheel: (event: WheelEvent) => void
+  handleMouseDown: (event: MouseEvent) => void
+  handleMouseMove: (event: MouseEvent) => void
+  handleMouseUp: () => void
+  resetView: () => void
+} {
   const { currentImage } = options
 
   // Refs
@@ -98,7 +110,7 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
     const imageRatio = img.naturalWidth / img.naturalHeight
     const viewportRatio = viewportWidth / viewportHeight
 
-    let fitWidth, fitHeight, fitX, fitY, scale
+    let fitWidth, fitHeight, scale
 
     if (imageRatio > viewportRatio) {
       // Image is wider - fit by width
@@ -113,8 +125,8 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
     }
 
     // Center the fitted image
-    fitX = (viewportWidth - fitWidth) / 2
-    fitY = (viewportHeight - fitHeight) / 2
+    const fitX = (viewportWidth - fitWidth) / 2
+    const fitY = (viewportHeight - fitHeight) / 2
 
     imageFit.value = {
       x: fitX,
@@ -157,8 +169,14 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
     // Draw entire source image (0, 0, naturalWidth, naturalHeight) to destination rect
     ctx.drawImage(
       img,
-      0, 0, img.naturalWidth, img.naturalHeight,  // Source rectangle (entire image)
-      x, y, zoomedWidth, zoomedHeight             // Destination rectangle (scaled and positioned)
+      0,
+      0,
+      img.naturalWidth,
+      img.naturalHeight, // Source rectangle (entire image)
+      x,
+      y,
+      zoomedWidth,
+      zoomedHeight // Destination rectangle (scaled and positioned)
     )
   }
 
@@ -214,8 +232,10 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
 
     // Calculate mouse position in image space (before zoom)
     const fit = imageFit.value
-    const imageX = (mouseX - fit.x - panX.value - (fit.width - fit.width * zoom.value) / 2) / zoom.value
-    const imageY = (mouseY - fit.y - panY.value - (fit.height - fit.height * zoom.value) / 2) / zoom.value
+    const imageX =
+      (mouseX - fit.x - panX.value - (fit.width - fit.width * zoom.value) / 2) / zoom.value
+    const imageY =
+      (mouseY - fit.y - panY.value - (fit.height - fit.height * zoom.value) / 2) / zoom.value
 
     // Calculate new zoom
     const delta = -event.deltaY * 0.001
@@ -226,8 +246,10 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
 
     // Adjust pan to keep mouse position fixed in image space
     if (newZoom !== oldZoom) {
-      panX.value = mouseX - fit.x - imageX * fit.scale * newZoom - (fit.width - fit.width * newZoom) / 2
-      panY.value = mouseY - fit.y - imageY * fit.scale * newZoom - (fit.height - fit.height * newZoom) / 2
+      panX.value =
+        mouseX - fit.x - imageX * fit.scale * newZoom - (fit.width - fit.width * newZoom) / 2
+      panY.value =
+        mouseY - fit.y - imageY * fit.scale * newZoom - (fit.height - fit.height * newZoom) / 2
     }
 
     constrainPan()
@@ -309,7 +331,9 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
     // SAFETY: Container must have size
     if (displayWidth === 0 || displayHeight === 0) {
       if (import.meta.env.DEV) {
-        console.warn('[Canvas] Container has no size, skipping resize. Check if container is visible.')
+        console.warn(
+          '[Canvas] Container has no size, skipping resize. Check if container is visible.'
+        )
       }
       return
     }
@@ -325,7 +349,7 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
     if (!ctx) {
       throw new Error('[Canvas] Failed to get 2d context')
     }
-    
+
     // CRITICAL: Always reset transform first to prevent accumulation
     ctx.setTransform(1, 0, 0, 1, 0, 0) // Reset to identity matrix
     ctx.scale(dpr, dpr) // Apply device pixel ratio scaling
@@ -375,10 +399,10 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
 
     // Step 1: Size canvas FIRST (sets width/height, applies DPR transform)
     handleResize()
-    
+
     // Step 2: Mark as initialized (enables loadImage)
     isInitialized.value = true
-    
+
     // Step 3: Setup resize observer (watches for container size changes)
     resizeObserver = new ResizeObserver(() => {
       handleResize()
@@ -417,4 +441,3 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
     resetView
   }
 }
-

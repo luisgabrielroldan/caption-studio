@@ -157,24 +157,6 @@ async function captionImage(imagePath: string, config: AutoCaptionerConfig): Pro
 }
 
 /**
- * Generate captions for multiple images (batch)
- * Currently processes sequentially, but designed for future parallel processing
- * Note: Not currently used but kept for future batch processing feature
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-// @ts-ignore - Function reserved for future batch processing feature
-async function captionImages(imagePaths: string[], config: AutoCaptionerConfig): Promise<string[]> {
-  const captions: string[] = []
-
-  for (const imagePath of imagePaths) {
-    const caption = await captionImage(imagePath, config)
-    captions.push(caption)
-  }
-
-  return captions
-}
-
-/**
  * Register IPC handlers for auto-captioner
  */
 export function registerAutoCaptionerHandlers(): void {

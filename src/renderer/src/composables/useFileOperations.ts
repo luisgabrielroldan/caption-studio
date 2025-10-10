@@ -44,7 +44,7 @@ export function useFileOperations(): {
         .filter((img) => img.originalCaption !== img.currentCaption)
         .map((img) => ({
           captionPath: img.captionPath,
-          caption: img.currentCaption
+          caption: img.currentCaption.trim()
         }))
 
       await window.api.saveCaptions(updates)
