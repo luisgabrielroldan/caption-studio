@@ -15,10 +15,10 @@ interface CaptionUpdate {
 }
 
 interface ConfigAPI {
-  getAll: () => Promise<any>
-  get: (key: string) => Promise<any>
-  set: (key: string, value: any) => Promise<boolean>
-  reset: () => Promise<any>
+  getAll: () => Promise<unknown>
+  get: (key: string) => Promise<unknown>
+  set: (key: string, value: unknown) => Promise<boolean>
+  reset: () => Promise<unknown>
   addRecentFolder: (folderPath: string) => Promise<string[]>
   getRecentFolders: () => Promise<string[]>
 }

@@ -5,7 +5,7 @@ import { useCaptionStore } from '../stores/captionStore'
 const store = useCaptionStore()
 const thumbnailRefs = ref<HTMLDivElement[]>([])
 
-const selectImage = (index: number) => {
+const selectImage = (index: number): void => {
   store.setCurrentIndex(index)
 }
 
@@ -34,21 +34,26 @@ watch(
       <div
         v-for="(image, index) in store.images"
         :key="image.id"
-        :ref="el => { if (el) thumbnailRefs[index] = el as HTMLDivElement }"
+        :ref="
+          (el) => {
+            if (el) thumbnailRefs[index] = el as HTMLDivElement
+          }
+        "
         class="thumbnail-item"
         :class="{
           active: index === store.currentIndex,
           modified: store.modifiedImages.has(image.id)
         }"
-        @click="selectImage(index)"
         :title="image.filename"
+        @click="selectImage(index)"
       >
         <div class="thumbnail-wrapper">
-          <img :src="`local-image://${encodeURIComponent(image.path)}`" :alt="image.filename" draggable="false" />
-          <div
-            v-if="store.modifiedImages.has(image.id)"
-            class="modified-indicator"
-          ></div>
+          <img
+            :src="`local-image://${encodeURIComponent(image.path)}`"
+            :alt="image.filename"
+            draggable="false"
+          />
+          <div v-if="store.modifiedImages.has(image.id)" class="modified-indicator"></div>
         </div>
       </div>
     </div>
@@ -158,4 +163,3 @@ watch(
   background: var(--scrollbar-thumb-hover);
 }
 </style>
-

@@ -1,4 +1,14 @@
-import { app, shell, BrowserWindow, ipcMain, protocol, Tray, Menu, nativeImage, dialog } from 'electron'
+import {
+  app,
+  shell,
+  BrowserWindow,
+  ipcMain,
+  protocol,
+  Tray,
+  Menu,
+  nativeImage,
+  dialog
+} from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -8,15 +18,14 @@ import { initStore, registerConfigHandlers } from './config'
 import { readFile } from 'fs/promises'
 
 let mainWindow: BrowserWindow | null = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let configStore: any = null
 let tray: Tray | null = null
 
 // Register privileged schemes before app is ready
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient('caption-studio', process.execPath, [
-      join(__dirname, '../..')
-    ])
+    app.setAsDefaultProtocolClient('caption-studio', process.execPath, [join(__dirname, '../..')])
   }
 } else {
   app.setAsDefaultProtocolClient('caption-studio')
@@ -79,13 +88,13 @@ function createWindow(): void {
 function createTray(): void {
   // Create tray icon
   const trayIcon = nativeImage.createFromPath(icon)
-  
+
   // Resize icon for tray (16x16 for most platforms)
   const resizedIcon = trayIcon.resize({ width: 16, height: 16 })
-  
+
   tray = new Tray(resizedIcon)
   tray.setToolTip('Caption Studio')
-  
+
   // Create context menu
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -108,7 +117,7 @@ function createTray(): void {
           const hasUnsaved = await mainWindow.webContents.executeJavaScript(
             'window.__hasUnsavedChanges ? window.__hasUnsavedChanges() : false'
           )
-          
+
           if (hasUnsaved) {
             const choice = dialog.showMessageBoxSync({
               type: 'question',
@@ -117,22 +126,24 @@ function createTray(): void {
               title: 'Unsaved Changes',
               message: 'You have unsaved changes. What would you like to do?'
             })
-            
+
             if (choice === 0) {
               // Cancel
               return
             } else if (choice === 2) {
               // Save and quit
-              await mainWindow.webContents.executeJavaScript('window.__saveChanges ? window.__saveChanges() : Promise.resolve()')
+              await mainWindow.webContents.executeJavaScript(
+                'window.__saveChanges ? window.__saveChanges() : Promise.resolve()'
+              )
             }
           }
         }
-        
+
         app.quit()
       }
     }
   ])
-  
+
   // Right-click shows menu
   tray.setContextMenu(contextMenu)
 }
@@ -184,7 +195,7 @@ app.whenReady().then(async () => {
   // Register IPC handlers
   registerImageHandlers()
   await registerConfigHandlers()
-  
+
   // Register veil handler
   ipcMain.handle('window:veil', () => {
     if (mainWindow) {

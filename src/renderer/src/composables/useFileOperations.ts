@@ -6,12 +6,17 @@ import { useConfig } from './useConfig'
  * Composable for file operations (open, save, close)
  * Centralizes file operation logic used by multiple components
  */
-export function useFileOperations() {
+export function useFileOperations(): {
+  isSaving: ReturnType<typeof ref<boolean>>
+  openFolder: () => Promise<{ folderPath: string; images: unknown[] } | null>
+  saveCaptions: (showAlert?: boolean) => Promise<boolean>
+  closeFolder: () => boolean
+} {
   const store = useCaptionStore()
   const config = useConfig()
   const isSaving = ref(false)
 
-  const openFolder = async () => {
+  const openFolder = async (): Promise<{ folderPath: string; images: unknown[] } | null> => {
     const result = await window.api.openFolder()
     if (result) {
       store.setFolderPath(result.folderPath)
@@ -27,7 +32,7 @@ export function useFileOperations() {
     return result
   }
 
-  const saveCaptions = async (showAlert = false) => {
+  const saveCaptions = async (showAlert = false): Promise<boolean> => {
     if (!store.hasUnsavedChanges) return false
 
     isSaving.value = true
@@ -56,7 +61,7 @@ export function useFileOperations() {
     }
   }
 
-  const closeFolder = () => {
+  const closeFolder = (): boolean => {
     if (store.hasUnsavedChanges) {
       const confirmed = confirm('You have unsaved changes. Are you sure you want to close?')
       if (!confirmed) return false
@@ -72,4 +77,3 @@ export function useFileOperations() {
     closeFolder
   }
 }
-

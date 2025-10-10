@@ -1,4 +1,4 @@
-import { Menu, BrowserWindow, app } from 'electron'
+import { Menu, BrowserWindow, app, shell } from 'electron'
 
 export function createApplicationMenu(mainWindow: BrowserWindow | null): void {
   const isMac = process.platform === 'darwin'
@@ -100,7 +100,11 @@ export function createApplicationMenu(mainWindow: BrowserWindow | null): void {
               { role: 'delete' as const },
               { role: 'selectAll' as const }
             ]
-          : [{ role: 'delete' as const }, { type: 'separator' as const }, { role: 'selectAll' as const }])
+          : [
+              { role: 'delete' as const },
+              { type: 'separator' as const },
+              { role: 'selectAll' as const }
+            ])
       ]
     },
 
@@ -195,7 +199,6 @@ export function createApplicationMenu(mainWindow: BrowserWindow | null): void {
         {
           label: 'Learn More',
           click: async () => {
-            const { shell } = require('electron')
             await shell.openExternal('https://github.com/yourusername/caption-studio')
           }
         }
@@ -206,4 +209,3 @@ export function createApplicationMenu(mainWindow: BrowserWindow | null): void {
   const menu = Menu.buildFromTemplate(template)
   Menu.setApplicationMenu(menu)
 }
-

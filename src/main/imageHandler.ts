@@ -24,7 +24,7 @@ interface CaptionUpdate {
 async function findImages(dirPath: string): Promise<ImageData[]> {
   const images: ImageData[] = []
 
-  async function scanDirectory(currentPath: string) {
+  async function scanDirectory(currentPath: string): Promise<void> {
     try {
       const entries = await fs.readdir(currentPath, { withFileTypes: true })
 
@@ -147,4 +147,3 @@ export function registerImageHandlers(): void {
     return `file://${imagePath}`
   })
 }
-

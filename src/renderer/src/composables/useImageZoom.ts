@@ -4,14 +4,27 @@ import type { Ref } from 'vue'
 interface ImageZoomOptions {
   minZoom?: number
   maxZoom?: number
-  currentImage: Ref<any>
+  currentImage: Ref<unknown>
 }
 
 /**
  * Composable for image zoom and pan functionality
  * Handles mouse wheel zoom, panning with boundaries, and reset
  */
-export function useImageZoom(options: ImageZoomOptions) {
+export function useImageZoom(options: ImageZoomOptions): {
+  zoom: Ref<number>
+  transformOrigin: Ref<string>
+  imageRef: Ref<HTMLImageElement | null>
+  wrapperRef: Ref<HTMLDivElement | null>
+  panX: Ref<number>
+  panY: Ref<number>
+  isZoomed: ReturnType<typeof computed<boolean>>
+  cursorStyle: ReturnType<typeof computed<string>>
+  handleWheel: (event: WheelEvent) => void
+  handleMouseDown: (event: MouseEvent) => void
+  handleMouseUp: () => void
+  resetZoom: () => void
+} {
   const { minZoom = 1, maxZoom = 5, currentImage } = options
 
   const zoom = ref(1)
@@ -38,7 +51,7 @@ export function useImageZoom(options: ImageZoomOptions) {
     panY.value = 0
   })
 
-  const handleWheel = (event: WheelEvent) => {
+  const handleWheel = (event: WheelEvent): void => {
     event.preventDefault()
 
     if (!imageRef.value) return
@@ -67,7 +80,7 @@ export function useImageZoom(options: ImageZoomOptions) {
     }
   }
 
-  const handleMouseDown = (event: MouseEvent) => {
+  const handleMouseDown = (event: MouseEvent): void => {
     if (!isZoomed.value) return
 
     isDragging.value = true
@@ -78,7 +91,7 @@ export function useImageZoom(options: ImageZoomOptions) {
     event.preventDefault()
   }
 
-  const handleMouseMove = (event: MouseEvent) => {
+  const handleMouseMove = (event: MouseEvent): void => {
     if (!isDragging.value || !imageRef.value || !wrapperRef.value) return
 
     const newPanX = event.clientX - dragStart.value.x
@@ -123,15 +136,15 @@ export function useImageZoom(options: ImageZoomOptions) {
     panY.value = Math.max(-maxPanY, Math.min(maxPanY, newPanY))
   }
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (): void => {
     isDragging.value = false
   }
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = (): void => {
     isDragging.value = false
   }
 
-  const resetZoom = () => {
+  const resetZoom = (): void => {
     zoom.value = 1
     transformOrigin.value = 'center center'
     panX.value = 0
@@ -156,4 +169,3 @@ export function useImageZoom(options: ImageZoomOptions) {
     resetZoom
   }
 }
-

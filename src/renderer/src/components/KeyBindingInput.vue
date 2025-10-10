@@ -21,32 +21,32 @@ const displayValue = computed(() => {
   return props.modelValue || props.placeholder || 'Click to set'
 })
 
-const handleFocus = () => {
+const handleFocus = (): void => {
   isFocused.value = true
 }
 
-const handleBlur = () => {
+const handleBlur = (): void => {
   isFocused.value = false
   isRecording.value = false
 }
 
-const handleClick = () => {
+const handleClick = (): void => {
   isRecording.value = true
 }
 
-const handleKeyDown = (event: KeyboardEvent) => {
+const handleKeyDown = (event: KeyboardEvent): void => {
   if (!isRecording.value) return
-  
+
   event.preventDefault()
   event.stopPropagation()
-  
+
   // Ignore standalone modifier keys
   if (['Control', 'Shift', 'Alt', 'Meta'].includes(event.key)) {
     return
   }
-  
+
   const parts: string[] = []
-  
+
   // Build the key combination string
   if (event.ctrlKey || event.metaKey) {
     parts.push(event.metaKey && navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl')
@@ -57,39 +57,39 @@ const handleKeyDown = (event: KeyboardEvent) => {
   if (event.altKey) {
     parts.push('Alt')
   }
-  
+
   // Format the main key
   let mainKey = event.key
-  
+
   // Special key formatting
   const keyMap: Record<string, string> = {
     ' ': 'Space',
-    'ArrowUp': '↑',
-    'ArrowDown': '↓',
-    'ArrowLeft': '←',
-    'ArrowRight': '→',
-    'Escape': 'Esc',
-    'Enter': 'Enter',
-    'Backspace': 'Backspace',
-    'Delete': 'Del',
-    'Tab': 'Tab'
+    ArrowUp: '↑',
+    ArrowDown: '↓',
+    ArrowLeft: '←',
+    ArrowRight: '→',
+    Escape: 'Esc',
+    Enter: 'Enter',
+    Backspace: 'Backspace',
+    Delete: 'Del',
+    Tab: 'Tab'
   }
-  
+
   if (keyMap[mainKey]) {
     mainKey = keyMap[mainKey]
   } else if (mainKey.length === 1) {
     mainKey = mainKey.toUpperCase()
   }
-  
+
   parts.push(mainKey)
-  
+
   const combination = parts.join(' + ')
   emit('update:modelValue', combination)
-  
+
   isRecording.value = false
 }
 
-const handleClear = (event: MouseEvent) => {
+const handleClear = (event: MouseEvent): void => {
   event.stopPropagation()
   emit('update:modelValue', '')
 }
@@ -111,9 +111,9 @@ const handleClear = (event: MouseEvent) => {
     <button
       v-if="modelValue"
       class="clear-btn"
+      title="Clear"
       @mousedown.prevent
       @click="handleClear"
-      title="Clear"
     >
       ✕
     </button>
@@ -136,7 +136,9 @@ const handleClear = (event: MouseEvent) => {
   font-size: 0.9em;
   min-width: 150px;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
   font-family: 'Monaco', 'Menlo', monospace;
   text-align: center;
 }
@@ -156,7 +158,8 @@ const handleClear = (event: MouseEvent) => {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(74, 158, 255, 0.4);
   }
   50% {
@@ -185,4 +188,3 @@ const handleClear = (event: MouseEvent) => {
   color: var(--text-primary);
 }
 </style>
-

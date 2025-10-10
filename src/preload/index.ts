@@ -12,9 +12,10 @@ const api = {
   config: {
     getAll: () => ipcRenderer.invoke('config:get-all'),
     get: (key: string) => ipcRenderer.invoke('config:get', key),
-    set: (key: string, value: any) => ipcRenderer.invoke('config:set', key, value),
+    set: (key: string, value: unknown) => ipcRenderer.invoke('config:set', key, value),
     reset: () => ipcRenderer.invoke('config:reset'),
-    addRecentFolder: (folderPath: string) => ipcRenderer.invoke('config:add-recent-folder', folderPath),
+    addRecentFolder: (folderPath: string) =>
+      ipcRenderer.invoke('config:add-recent-folder', folderPath),
     getRecentFolders: () => ipcRenderer.invoke('config:get-recent-folders')
   }
 }
@@ -23,7 +24,7 @@ const api = {
 const electron = {
   ...electronAPI,
   ipcRenderer: {
-    on: (channel: string, func: (...args: any[]) => void) => {
+    on: (channel: string, func: (...args: unknown[]) => void) => {
       // Whitelist of allowed channels
       const validChannels = [
         'menu:open-folder',

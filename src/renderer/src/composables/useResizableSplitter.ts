@@ -12,21 +12,31 @@ interface ResizableSplitterOptions {
  * Composable for resizable panel splitter
  * Manages drag state, width constraints, and persistence via config
  */
-export function useResizableSplitter(options: ResizableSplitterOptions = {}) {
-  const { defaultWidth = 280, minWidth = 200, maxWidth = 600, configKey = 'thumbnailPanelWidth' } =
-    options
+export function useResizableSplitter(options: ResizableSplitterOptions = {}): {
+  width: ReturnType<typeof ref<number>>
+  isDragging: ReturnType<typeof ref<boolean>>
+  handleSplitterMouseDown: (event: MouseEvent) => void
+  minWidth: number
+  maxWidth: number
+} {
+  const {
+    defaultWidth = 280,
+    minWidth = 200,
+    maxWidth = 600,
+    configKey = 'thumbnailPanelWidth'
+  } = options
 
   const config = useConfig()
   const width = ref(defaultWidth)
   const isDragging = ref(false)
 
   // Splitter drag handlers
-  const handleSplitterMouseDown = (event: MouseEvent) => {
+  const handleSplitterMouseDown = (event: MouseEvent): void => {
     isDragging.value = true
     event.preventDefault()
   }
 
-  const handleMouseMove = (event: MouseEvent) => {
+  const handleMouseMove = (event: MouseEvent): void => {
     if (!isDragging.value) return
 
     const newWidth = event.clientX
@@ -35,7 +45,7 @@ export function useResizableSplitter(options: ResizableSplitterOptions = {}) {
     }
   }
 
-  const handleMouseUp = async () => {
+  const handleMouseUp = async (): Promise<void> => {
     if (isDragging.value) {
       isDragging.value = false
       // Save width to config
@@ -67,4 +77,3 @@ export function useResizableSplitter(options: ResizableSplitterOptions = {}) {
     maxWidth
   }
 }
-

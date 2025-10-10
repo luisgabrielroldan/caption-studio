@@ -44,38 +44,38 @@ const hide = (): void => {
 const saveSettings = async (): Promise<void> => {
   try {
     // Get current editor and update only fontSize and lineHeight
-    const currentEditor = await config.get('editor') || {}
+    const currentEditor = (await config.get('editor')) || {}
     await config.set('editor', {
       ...currentEditor,
       fontSize: fontSize.value,
       lineHeight: lineHeight.value
     })
-    
+
     // Get current ui and update only theme
-    const currentUi = await config.get('ui') || {}
+    const currentUi = (await config.get('ui')) || {}
     await config.set('ui', {
       ...currentUi,
       theme: theme.value
     })
-    
+
     // Get current behavior and update only rememberLastFolder
-    const currentBehavior = await config.get('behavior') || {}
+    const currentBehavior = (await config.get('behavior')) || {}
     await config.set('behavior', {
       ...currentBehavior,
       rememberLastFolder: rememberLastFolder.value
     })
-    
+
     // Get current features and update veilKey
-    const currentFeatures = await config.get('features') || {}
+    const currentFeatures = (await config.get('features')) || {}
     await config.set('features', {
       ...currentFeatures,
       veilKey: veilKey.value
     })
-    
+
     // Dispatch event to notify app of theme/settings change
     window.dispatchEvent(new CustomEvent('theme-updated'))
     window.dispatchEvent(new CustomEvent('settings-updated'))
-    
+
     alert('Settings saved successfully!')
     hide()
   } catch (error) {
@@ -382,4 +382,3 @@ input[type='checkbox'] {
   background: var(--scrollbar-thumb-hover);
 }
 </style>
-

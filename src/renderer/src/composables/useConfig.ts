@@ -4,24 +4,32 @@ import { ref, Ref } from 'vue'
  * Composable for accessing and managing application configuration
  * Provides reactive access to config values with persistence
  */
-export function useConfig() {
+export function useConfig(): {
+  get: <T = unknown>(key: string) => Promise<T>
+  set: (key: string, value: unknown) => Promise<boolean>
+  getAll: () => Promise<unknown>
+  reset: () => Promise<unknown>
+  addRecentFolder: (folderPath: string) => Promise<string[]>
+  getRecentFolders: () => Promise<string[]>
+  createReactive: <T>(key: string, defaultValue: T) => { value: Ref<T>; save: () => Promise<void> }
+} {
   // Get a specific config value
-  const get = async <T = any>(key: string): Promise<T> => {
-    return await window.api.config.get(key)
+  const get = async <T = unknown>(key: string): Promise<T> => {
+    return (await window.api.config.get(key)) as T
   }
 
   // Set a specific config value
-  const set = async (key: string, value: any): Promise<boolean> => {
+  const set = async (key: string, value: unknown): Promise<boolean> => {
     return await window.api.config.set(key, value)
   }
 
   // Get all config
-  const getAll = async (): Promise<any> => {
+  const getAll = async (): Promise<unknown> => {
     return await window.api.config.getAll()
   }
 
   // Reset config to defaults
-  const reset = async (): Promise<any> => {
+  const reset = async (): Promise<unknown> => {
     return await window.api.config.reset()
   }
 
@@ -36,7 +44,10 @@ export function useConfig() {
   }
 
   // Create a reactive config value
-  const createReactive = <T>(key: string, defaultValue: T): { value: Ref<T>; save: () => Promise<void> } => {
+  const createReactive = <T>(
+    key: string,
+    defaultValue: T
+  ): { value: Ref<T>; save: () => Promise<void> } => {
     const value = ref<T>(defaultValue) as Ref<T>
 
     // Load initial value
@@ -47,7 +58,7 @@ export function useConfig() {
     })
 
     // Save function
-    const save = async () => {
+    const save = async (): Promise<void> => {
       await set(key, value.value)
     }
 
@@ -64,4 +75,3 @@ export function useConfig() {
     createReactive
   }
 }
-

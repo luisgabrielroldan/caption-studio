@@ -13,7 +13,7 @@ const fontSize = ref(14)
 const lineHeight = ref(1.6)
 
 // Load editor settings
-const loadEditorSettings = async () => {
+const loadEditorSettings = async (): Promise<void> => {
   const editorConfig = await config.get('editor')
   if (editorConfig) {
     fontSize.value = editorConfig.fontSize ?? 14
@@ -23,7 +23,7 @@ const loadEditorSettings = async () => {
 
 onMounted(async () => {
   await loadEditorSettings()
-  
+
   // Listen for settings updates
   window.addEventListener('settings-updated', loadEditorSettings)
 })
@@ -46,14 +46,14 @@ watch(
 )
 
 // Update store when local caption changes
-const updateCaption = () => {
+const updateCaption = (): void => {
   if (store.currentImage) {
     store.updateCurrentCaption(localCaption.value)
   }
 }
 
 // Revert current caption to original
-const revertCaption = () => {
+const revertCaption = (): void => {
   if (store.currentImage) {
     localCaption.value = store.currentImage.originalCaption
     store.updateCurrentCaption(store.currentImage.originalCaption)
@@ -61,7 +61,7 @@ const revertCaption = () => {
 }
 
 // Expose focus method for parent component
-const focusTextarea = () => {
+const focusTextarea = (): void => {
   textareaRef.value?.focus()
 }
 
@@ -78,8 +78,8 @@ defineExpose({
       <button
         v-if="store.currentImage && store.modifiedImages.has(store.currentImage.id)"
         class="modified-badge"
-        @click="revertCaption"
         title="Click to revert changes"
+        @click="revertCaption"
       >
         <span class="badge-text">Modified</span>
         <span class="badge-text-hover">Undo</span>
@@ -88,11 +88,11 @@ defineExpose({
     <textarea
       ref="textareaRef"
       v-model="localCaption"
-      @input="updateCaption"
       placeholder="Enter caption for this image..."
       :disabled="!store.currentImage"
       class="caption-textarea"
       :style="{ fontSize: `${fontSize}px`, lineHeight: lineHeight }"
+      @input="updateCaption"
     />
   </div>
 </template>
@@ -136,9 +136,10 @@ defineExpose({
   border-radius: 4px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s cubic-bezier(0.4, 0, 0.2, 1), 
-              border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
-              color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
 
@@ -213,4 +214,3 @@ defineExpose({
   background: var(--scrollbar-thumb-hover);
 }
 </style>
-

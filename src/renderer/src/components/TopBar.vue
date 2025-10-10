@@ -190,4 +190,3 @@ const currentPosition = computed(() => {
   }
 }
 </style>
-

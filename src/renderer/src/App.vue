@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useCaptionStore } from './stores/captionStore'
 import { useFileOperations } from './composables/useFileOperations'
 import { useKeyboardShortcuts } from './composables/useKeyboardShortcuts'
@@ -22,28 +22,31 @@ const currentTheme = ref<'dark' | 'light' | 'system'>('dark')
 const { openFolder, saveCaptions, closeFolder } = useFileOperations()
 
 // Resizable splitter
-const { width: thumbnailWidth, isDragging: isDraggingSplitter, handleSplitterMouseDown } =
-  useResizableSplitter()
+const {
+  width: thumbnailWidth,
+  isDragging: isDraggingSplitter,
+  handleSplitterMouseDown
+} = useResizableSplitter()
 
 // Veil feature (hide to system tray)
 useVeil()
 
 // Handle menu event for showing preferences
-const handleShowPreferences = () => {
+const handleShowPreferences = (): void => {
   settingsDialogRef.value?.show()
 }
 
 // Handle reset changes
-const handleResetChanges = () => {
+const handleResetChanges = (): void => {
   if (!store.hasUnsavedChanges) {
     alert('No changes to discard.')
     return
   }
-  
+
   const confirmed = confirm(
     `Are you sure you want to discard all ${store.modifiedImages.size} unsaved changes?\n\nThis cannot be undone.`
   )
-  
+
   if (confirmed) {
     store.resetChanges()
   }
@@ -57,13 +60,13 @@ const getEffectiveTheme = (): 'dark' | 'light' => {
   return currentTheme.value
 }
 
-const applyTheme = () => {
+const applyTheme = (): void => {
   const effectiveTheme = getEffectiveTheme()
   document.documentElement.setAttribute('data-theme', effectiveTheme)
 }
 
 // Load theme from config
-const loadTheme = async () => {
+const loadTheme = async (): Promise<void> => {
   const uiConfig = await config.get('ui')
   if (uiConfig?.theme) {
     currentTheme.value = uiConfig.theme
@@ -73,20 +76,20 @@ const loadTheme = async () => {
 
 // Watch for system theme changes
 const systemThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-const handleSystemThemeChange = () => {
+const handleSystemThemeChange = (): void => {
   if (currentTheme.value === 'system') {
     applyTheme()
   }
 }
 
 // Listen for theme updates from settings dialog
-const handleThemeUpdate = async () => {
+const handleThemeUpdate = async (): Promise<void> => {
   await loadTheme()
 }
 
 // Keyboard shortcuts
 useKeyboardShortcuts({
-  onFocusEditor: () => captionEditorRef.value?.focusTextarea(),
+  onFocusEditor: (): void => captionEditorRef.value?.focusTextarea(),
   onOpenFolder: openFolder,
   onSaveCaptions: () => saveCaptions(false), // No alert for keyboard shortcut
   onResetChanges: handleResetChanges,
@@ -95,7 +98,7 @@ useKeyboardShortcuts({
 })
 
 // Warn before closing with unsaved changes
-const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+const handleBeforeUnload = (event: BeforeUnloadEvent): void => {
   if (store.hasUnsavedChanges) {
     event.preventDefault()
     event.returnValue = ''
@@ -104,18 +107,18 @@ const handleBeforeUnload = (event: BeforeUnloadEvent) => {
 
 onMounted(async () => {
   window.addEventListener('beforeunload', handleBeforeUnload)
-  
+
   // Load and apply theme
   await loadTheme()
-  
+
   // Expose functions for tray menu
-  // @ts-ignore
+  // @ts-ignore - Dynamic property for tray menu access
   window.__hasUnsavedChanges = () => store.hasUnsavedChanges
-  // @ts-ignore
+  // @ts-ignore - Dynamic property for tray menu access
   window.__saveChanges = async () => {
     await saveCaptions(false)
   }
-  
+
   // Auto-open last folder if enabled
   const behavior = await config.get('behavior')
   if (behavior?.rememberLastFolder && behavior?.lastOpenedFolder) {
@@ -130,17 +133,17 @@ onMounted(async () => {
       console.error('Failed to open last folder:', error)
     }
   }
-  
+
   // Listen for system theme changes
   systemThemeMediaQuery.addEventListener('change', handleSystemThemeChange)
-  
+
   // Listen for theme updates from settings (custom event)
   window.addEventListener('theme-updated', handleThemeUpdate)
-  
+
   // Listen for preferences menu event
-  // @ts-ignore
+  // @ts-ignore - Electron IPC types not fully defined in window
   if (window.electron?.ipcRenderer) {
-    // @ts-ignore
+    // @ts-ignore - Custom IPC method defined in preload
     window.electron.ipcRenderer.on('menu:show-preferences', handleShowPreferences)
   }
 })
@@ -149,11 +152,11 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
   systemThemeMediaQuery.removeEventListener('change', handleSystemThemeChange)
   window.removeEventListener('theme-updated', handleThemeUpdate)
-  
+
   // Clean up preferences listener
-  // @ts-ignore
+  // @ts-ignore - Electron IPC types not fully defined in window
   if (window.electron?.ipcRenderer?.removeAllListeners) {
-    // @ts-ignore
+    // @ts-ignore - Custom IPC method defined in preload
     window.electron.ipcRenderer.removeAllListeners('menu:show-preferences')
   }
 })
@@ -166,8 +169,8 @@ onUnmounted(() => {
       <div class="thumbnail-panel" :style="{ width: `${thumbnailWidth}px` }">
         <ThumbnailList />
       </div>
-      <div 
-        class="splitter" 
+      <div
+        class="splitter"
         :class="{ dragging: isDraggingSplitter }"
         @mousedown="handleSplitterMouseDown"
       ></div>
@@ -176,7 +179,7 @@ onUnmounted(() => {
         <CaptionEditor ref="captionEditorRef" />
       </div>
     </div>
-    
+
     <!-- Settings Dialog -->
     <SettingsDialog ref="settingsDialogRef" />
   </div>

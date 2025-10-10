@@ -24,14 +24,12 @@ export const useCaptionStore = defineStore('caption', () => {
   })
 
   const hasUnsavedChanges = computed(() => {
-    return images.value.some(img => img.originalCaption !== img.currentCaption)
+    return images.value.some((img) => img.originalCaption !== img.currentCaption)
   })
 
   const modifiedImages = computed(() => {
     return new Set(
-      images.value
-        .filter(img => img.originalCaption !== img.currentCaption)
-        .map(img => img.id)
+      images.value.filter((img) => img.originalCaption !== img.currentCaption).map((img) => img.id)
     )
   })
 
@@ -40,52 +38,52 @@ export const useCaptionStore = defineStore('caption', () => {
   const hasImages = computed(() => images.value.length > 0)
 
   // Actions
-  function setImages(newImages: ImageItem[]) {
+  function setImages(newImages: ImageItem[]): void {
     images.value = newImages
     currentIndex.value = newImages.length > 0 ? 0 : -1
   }
 
-  function setFolderPath(path: string) {
+  function setFolderPath(path: string): void {
     folderPath.value = path
   }
 
-  function setCurrentIndex(index: number) {
+  function setCurrentIndex(index: number): void {
     if (index >= 0 && index < images.value.length) {
       currentIndex.value = index
     }
   }
 
-  function nextImage() {
+  function nextImage(): void {
     if (currentIndex.value < images.value.length - 1) {
       currentIndex.value++
     }
   }
 
-  function previousImage() {
+  function previousImage(): void {
     if (currentIndex.value > 0) {
       currentIndex.value--
     }
   }
 
-  function updateCurrentCaption(caption: string) {
+  function updateCurrentCaption(caption: string): void {
     if (currentImage.value) {
       currentImage.value.currentCaption = caption
     }
   }
 
-  function resetChanges() {
-    images.value.forEach(img => {
+  function resetChanges(): void {
+    images.value.forEach((img) => {
       img.currentCaption = img.originalCaption
     })
   }
 
-  function markAsSaved() {
-    images.value.forEach(img => {
+  function markAsSaved(): void {
+    images.value.forEach((img) => {
       img.originalCaption = img.currentCaption
     })
   }
 
-  function clearAll() {
+  function clearAll(): void {
     images.value = []
     currentIndex.value = -1
     folderPath.value = ''
@@ -115,4 +113,3 @@ export const useCaptionStore = defineStore('caption', () => {
     clearAll
   }
 })
-
