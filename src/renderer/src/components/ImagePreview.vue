@@ -130,10 +130,9 @@ const imageInfo = computed(() => {
   display: block;
   border-radius: 4px;
   transition: none;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
+  /* High-quality image rendering for photos */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: auto;
 }
 
 .reset-zoom-btn {
