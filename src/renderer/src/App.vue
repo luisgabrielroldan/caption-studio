@@ -5,6 +5,7 @@ import { useFileOperations } from './composables/useFileOperations'
 import { useKeyboardShortcuts } from './composables/useKeyboardShortcuts'
 import { useResizableSplitter } from './composables/useResizableSplitter'
 import { useConfig } from './composables/useConfig'
+import { useVeil } from './composables/useVeil'
 import TopBar from './components/TopBar.vue'
 import ThumbnailList from './components/ThumbnailList.vue'
 import ImagePreview from './components/ImagePreview.vue'
@@ -23,6 +24,9 @@ const { openFolder, saveCaptions, closeFolder } = useFileOperations()
 // Resizable splitter
 const { width: thumbnailWidth, isDragging: isDraggingSplitter, handleSplitterMouseDown } =
   useResizableSplitter()
+
+// Veil feature (hide to system tray)
+useVeil()
 
 // Handle menu event for showing preferences
 const handleShowPreferences = () => {
@@ -103,6 +107,14 @@ onMounted(async () => {
   
   // Load and apply theme
   await loadTheme()
+  
+  // Expose functions for tray menu
+  // @ts-ignore
+  window.__hasUnsavedChanges = () => store.hasUnsavedChanges
+  // @ts-ignore
+  window.__saveChanges = async () => {
+    await saveCaptions(false)
+  }
   
   // Auto-open last folder if enabled
   const behavior = await config.get('behavior')

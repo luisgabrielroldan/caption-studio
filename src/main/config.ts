@@ -34,6 +34,10 @@ interface ConfigSchema {
     rememberLastFolder: boolean
     lastOpenedFolder?: string
   }
+  // Features
+  features: {
+    veilKey: string
+  }
 }
 
 const defaultConfig: ConfigSchema = {
@@ -59,6 +63,9 @@ const defaultConfig: ConfigSchema = {
   behavior: {
     warnOnUnsavedChanges: true,
     rememberLastFolder: true
+  },
+  features: {
+    veilKey: 'V'
   }
 }
 

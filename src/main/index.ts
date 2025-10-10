@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, protocol } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, protocol, Tray, Menu, nativeImage, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -9,6 +9,7 @@ import { readFile } from 'fs/promises'
 
 let mainWindow: BrowserWindow | null = null
 let configStore: any = null
+let tray: Tray | null = null
 
 // Register privileged schemes before app is ready
 if (process.defaultApp) {
@@ -75,6 +76,67 @@ function createWindow(): void {
   createApplicationMenu(mainWindow)
 }
 
+function createTray(): void {
+  // Create tray icon
+  const trayIcon = nativeImage.createFromPath(icon)
+  
+  // Resize icon for tray (16x16 for most platforms)
+  const resizedIcon = trayIcon.resize({ width: 16, height: 16 })
+  
+  tray = new Tray(resizedIcon)
+  tray.setToolTip('Caption Studio')
+  
+  // Create context menu
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Show',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.show()
+          mainWindow.focus()
+        }
+      }
+    },
+    {
+      type: 'separator'
+    },
+    {
+      label: 'Quit',
+      click: async () => {
+        // Ask renderer if there are unsaved changes
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          const hasUnsaved = await mainWindow.webContents.executeJavaScript(
+            'window.__hasUnsavedChanges ? window.__hasUnsavedChanges() : false'
+          )
+          
+          if (hasUnsaved) {
+            const choice = dialog.showMessageBoxSync({
+              type: 'question',
+              buttons: ['Cancel', 'Discard Changes', 'Save and Quit'],
+              defaultId: 2,
+              title: 'Unsaved Changes',
+              message: 'You have unsaved changes. What would you like to do?'
+            })
+            
+            if (choice === 0) {
+              // Cancel
+              return
+            } else if (choice === 2) {
+              // Save and quit
+              await mainWindow.webContents.executeJavaScript('window.__saveChanges ? window.__saveChanges() : Promise.resolve()')
+            }
+          }
+        }
+        
+        app.quit()
+      }
+    }
+  ])
+  
+  // Right-click shows menu
+  tray.setContextMenu(contextMenu)
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -122,8 +184,16 @@ app.whenReady().then(async () => {
   // Register IPC handlers
   registerImageHandlers()
   await registerConfigHandlers()
+  
+  // Register veil handler
+  ipcMain.handle('window:veil', () => {
+    if (mainWindow) {
+      mainWindow.hide()
+    }
+  })
 
   createWindow()
+  createTray()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

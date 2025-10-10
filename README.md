@@ -24,6 +24,11 @@ A powerful Electron-based application for managing image captions in training da
 - **Modified counter**: Shows number of images with unsaved captions
 - **Batch save**: Save all modified captions at once
 
+### System Tray Integration
+- **Veil feature**: Hide the application window to the system tray with a configurable keyboard shortcut
+- **Tray menu**: Right-click the tray icon to access "Show" and "Quit" options
+- **Unsaved changes protection**: Quitting from the tray prompts you to save if there are unsaved changes
+
 ## Keyboard Shortcuts
 
 ### Navigation
@@ -46,6 +51,9 @@ A powerful Electron-based application for managing image captions in training da
 - `Ctrl/Cmd + O`: Open folder
 - `Ctrl/Cmd + S`: Save all captions
 - `Ctrl/Cmd + W`: Close current folder
+- `Ctrl/Cmd + Shift + R`: Discard all unsaved changes
+- `Ctrl/Cmd + ,`: Open preferences
+- `V` (configurable): Veil to system tray (hide window)
 
 ### Fast Workflow
 1. Use `↑`/`↓` or `J`/`K` to navigate between images
@@ -76,6 +84,16 @@ dataset/
 ```
 
 If a caption file doesn't exist, the caption editor will be empty and a new file will be created when you save.
+
+## Settings
+
+Access settings via `Ctrl/Cmd + ,` or the application menu. Configurable options include:
+
+- **Font Size**: Caption editor font size (10-24px)
+- **Line Height**: Caption editor line height (1.0-3.0)
+- **Theme**: Dark, Light, or System (follows OS preference)
+- **Remember Last Folder**: Automatically reopen the last opened folder on launch
+- **Veil Shortcut**: Customize the keyboard shortcut to hide the app to system tray
 
 ## Development
 

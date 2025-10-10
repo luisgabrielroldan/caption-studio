@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useConfig } from '../composables/useConfig'
+import KeyBindingInput from './KeyBindingInput.vue'
 
 const config = useConfig()
 const isVisible = ref(false)
@@ -10,15 +11,17 @@ const fontSize = ref(14)
 const lineHeight = ref(1.6)
 const theme = ref<'dark' | 'light' | 'system'>('dark')
 const rememberLastFolder = ref(true)
+const veilKey = ref('V')
 
 // Load settings from config
-const loadSettings = async () => {
+const loadSettings = async (): Promise<void> => {
   const allConfig = await config.getAll()
   if (allConfig) {
     fontSize.value = allConfig.editor?.fontSize ?? 14
     lineHeight.value = allConfig.editor?.lineHeight ?? 1.6
     theme.value = allConfig.ui?.theme ?? 'dark'
     rememberLastFolder.value = allConfig.behavior?.rememberLastFolder ?? true
+    veilKey.value = allConfig.features?.veilKey ?? 'V'
   }
 }
 
@@ -28,17 +31,17 @@ onMounted(async () => {
 })
 
 // Show/hide methods
-const show = async () => {
+const show = async (): Promise<void> => {
   await loadSettings()
   isVisible.value = true
 }
 
-const hide = () => {
+const hide = (): void => {
   isVisible.value = false
 }
 
 // Save settings
-const saveSettings = async () => {
+const saveSettings = async (): Promise<void> => {
   try {
     // Get current editor and update only fontSize and lineHeight
     const currentEditor = await config.get('editor') || {}
@@ -62,6 +65,13 @@ const saveSettings = async () => {
       rememberLastFolder: rememberLastFolder.value
     })
     
+    // Get current features and update veilKey
+    const currentFeatures = await config.get('features') || {}
+    await config.set('features', {
+      ...currentFeatures,
+      veilKey: veilKey.value
+    })
+    
     // Dispatch event to notify app of theme/settings change
     window.dispatchEvent(new CustomEvent('theme-updated'))
     window.dispatchEvent(new CustomEvent('settings-updated'))
@@ -74,13 +84,14 @@ const saveSettings = async () => {
 }
 
 // Reset to defaults
-const resetToDefaults = async () => {
+const resetToDefaults = async (): Promise<void> => {
   if (confirm('Are you sure you want to reset these settings to defaults?')) {
     try {
       fontSize.value = 14
       lineHeight.value = 1.6
       theme.value = 'dark'
       rememberLastFolder.value = true
+      veilKey.value = 'V'
       await saveSettings()
       alert('Settings reset to defaults!')
     } catch (error) {
@@ -102,7 +113,7 @@ defineExpose({
       <div class="modal-dialog">
         <div class="modal-header">
           <h2>Preferences</h2>
-          <button class="close-btn" @click="hide" title="Close">✕</button>
+          <button class="close-btn" title="Close" @click="hide">✕</button>
         </div>
 
         <div class="modal-content">
@@ -143,6 +154,10 @@ defineExpose({
                 <input v-model="rememberLastFolder" type="checkbox" />
                 Remember Last Opened Folder
               </label>
+            </div>
+            <div class="setting-row">
+              <label for="veilKey">Veil Shortcut</label>
+              <KeyBindingInput v-model="veilKey" placeholder="Click to set" />
             </div>
           </section>
         </div>
