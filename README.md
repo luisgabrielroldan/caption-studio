@@ -53,7 +53,7 @@ A powerful Electron-based application for managing image captions in training da
 - `Ctrl/Cmd + W`: Close current folder
 - `Ctrl/Cmd + Shift + R`: Discard all unsaved changes
 - `Ctrl/Cmd + ,`: Open preferences
-- `V` (configurable): Veil to system tray (hide window)
+- `Shift + F12` (configurable): Veil to system tray (hide window)
 
 ### Fast Workflow
 1. Use `↑`/`↓` or `J`/`K` to navigate between images

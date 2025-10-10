@@ -66,7 +66,7 @@ const defaultConfig: ConfigSchema = {
     rememberLastFolder: true
   },
   features: {
-    veilKey: 'V'
+    veilKey: 'Shift + F12'
   }
 }
 

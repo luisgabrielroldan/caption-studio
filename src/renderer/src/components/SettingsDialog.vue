@@ -11,7 +11,7 @@ const fontSize = ref(14)
 const lineHeight = ref(1.6)
 const theme = ref<'dark' | 'light' | 'system'>('dark')
 const rememberLastFolder = ref(true)
-const veilKey = ref('V')
+const veilKey = ref('Shift + F12')
 
 // Load settings from config
 const loadSettings = async (): Promise<void> => {
@@ -26,7 +26,7 @@ const loadSettings = async (): Promise<void> => {
     lineHeight.value = allConfig.editor?.lineHeight ?? 1.6
     theme.value = allConfig.ui?.theme ?? 'dark'
     rememberLastFolder.value = allConfig.behavior?.rememberLastFolder ?? true
-    veilKey.value = allConfig.features?.veilKey ?? 'V'
+    veilKey.value = allConfig.features?.veilKey ?? 'Shift + F12'
   }
 }
 
@@ -96,7 +96,7 @@ const resetToDefaults = async (): Promise<void> => {
       lineHeight.value = 1.6
       theme.value = 'dark'
       rememberLastFolder.value = true
-      veilKey.value = 'V'
+      veilKey.value = 'Shift + F12'
       await saveSettings()
       alert('Settings reset to defaults!')
     } catch (error) {

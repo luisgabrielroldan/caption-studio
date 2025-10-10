@@ -6,7 +6,7 @@ import { useConfig } from './useConfig'
  */
 export function useVeil(): { veilKey: Ref<string> } {
   const config = useConfig()
-  const veilKey = ref('V')
+  const veilKey = ref('Shift + F12')
 
   // Parse key combination string and check if event matches
   const matchesVeilKey = (event: KeyboardEvent): boolean => {
