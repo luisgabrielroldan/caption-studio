@@ -34,7 +34,12 @@ const handleKeyDown = (event: KeyboardEvent): void => {
     return
   }
 
-  if ((event.ctrlKey || event.metaKey) && event.key === 'a' && store.hasImages) {
+  // Check if the event target is a text input - allow default behavior there
+  const target = event.target as HTMLElement
+  const isTextInput =
+    target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.isContentEditable
+
+  if ((event.ctrlKey || event.metaKey) && event.key === 'a' && store.hasImages && !isTextInput) {
     event.preventDefault()
     store.selectAll()
   }

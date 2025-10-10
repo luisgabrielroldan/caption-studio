@@ -189,7 +189,7 @@ defineExpose({
 
 <template>
   <Transition name="modal">
-    <div v-if="isVisible" class="modal-backdrop" @click.self="hide">
+    <div v-if="isVisible" class="modal-backdrop">
       <div class="modal-dialog">
         <div class="modal-header">
           <h2>Preferences</h2>
