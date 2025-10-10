@@ -33,6 +33,7 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}): vo
           if (result) {
             // Use the store directly since we're bypassing the composable
             store.setFolderPath(result.folderPath)
+            // @ts-ignore - Type mismatch between ImageData and ImageItem despite having same fields
             store.setImages(result.images)
           }
         }
@@ -40,13 +41,29 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}): vo
       [MENU_EVENTS.SAVE_CAPTIONS]: options.onSaveCaptions || (() => {}),
       [MENU_EVENTS.RESET_CHANGES]: options.onResetChanges || (() => {}),
       [MENU_EVENTS.CLOSE_FOLDER]: options.onCloseFolder || (() => {}),
-      [MENU_EVENTS.PREVIOUS_IMAGE]: () => store.previousImage(),
-      [MENU_EVENTS.NEXT_IMAGE]: () => store.nextImage(),
+      [MENU_EVENTS.PREVIOUS_IMAGE]: () => {
+        if (!store.isBatchGenerating) {
+          store.previousImage()
+          store.selectSingle(store.currentIndex)
+        }
+      },
+      [MENU_EVENTS.NEXT_IMAGE]: () => {
+        if (!store.isBatchGenerating) {
+          store.nextImage()
+          store.selectSingle(store.currentIndex)
+        }
+      },
       [MENU_EVENTS.FIRST_IMAGE]: () => {
-        if (store.totalImages > 0) store.setCurrentIndex(0)
+        if (store.totalImages > 0 && !store.isBatchGenerating) {
+          store.setCurrentIndex(0)
+          store.selectSingle(0)
+        }
       },
       [MENU_EVENTS.LAST_IMAGE]: () => {
-        if (store.totalImages > 0) store.setCurrentIndex(store.totalImages - 1)
+        if (store.totalImages > 0 && !store.isBatchGenerating) {
+          store.setCurrentIndex(store.totalImages - 1)
+          store.selectSingle(store.totalImages - 1)
+        }
       },
       [MENU_EVENTS.FOCUS_EDITOR]: options.onFocusEditor || (() => {})
     })
@@ -60,31 +77,35 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}): vo
     const target = event.target as HTMLElement
     const isTextInput = target.tagName === 'TEXTAREA' || target.tagName === 'INPUT'
 
-    // Navigation shortcuts (work anywhere except when typing in text input)
+    // Navigation shortcuts (work anywhere except when typing in text input or batch generation is active)
     if (event.key === 'ArrowUp' || event.key === 'k') {
-      if (!isTextInput || event.ctrlKey || event.metaKey) {
+      if ((!isTextInput || event.ctrlKey || event.metaKey) && !store.isBatchGenerating) {
         event.preventDefault()
         store.previousImage()
+        store.selectSingle(store.currentIndex)
       }
     } else if (event.key === 'ArrowDown' || event.key === 'j') {
-      if (!isTextInput || event.ctrlKey || event.metaKey) {
+      if ((!isTextInput || event.ctrlKey || event.metaKey) && !store.isBatchGenerating) {
         event.preventDefault()
         store.nextImage()
+        store.selectSingle(store.currentIndex)
       }
     }
     // Home/End to jump to first/last image
     else if (event.key === 'Home') {
-      if (!isTextInput || event.ctrlKey || event.metaKey) {
+      if ((!isTextInput || event.ctrlKey || event.metaKey) && !store.isBatchGenerating) {
         event.preventDefault()
         if (store.totalImages > 0) {
           store.setCurrentIndex(0)
+          store.selectSingle(0)
         }
       }
     } else if (event.key === 'End') {
-      if (!isTextInput || event.ctrlKey || event.metaKey) {
+      if ((!isTextInput || event.ctrlKey || event.metaKey) && !store.isBatchGenerating) {
         event.preventDefault()
         if (store.totalImages > 0) {
           store.setCurrentIndex(store.totalImages - 1)
+          store.selectSingle(store.totalImages - 1)
         }
       }
     }

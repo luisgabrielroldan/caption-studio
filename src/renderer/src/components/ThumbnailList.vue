@@ -1,13 +1,52 @@
 <script setup lang="ts">
-import { watch, ref, nextTick } from 'vue'
+import { watch, ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { useCaptionStore } from '../stores/captionStore'
 
 const store = useCaptionStore()
 const thumbnailRefs = ref<HTMLDivElement[]>([])
 
-const selectImage = (index: number): void => {
-  store.setCurrentIndex(index)
+const selectImage = (index: number, event: MouseEvent): void => {
+  // Prevent navigation if batch generation is active
+  if (store.isBatchGenerating) {
+    return
+  }
+
+  if (event.ctrlKey || event.metaKey) {
+    // Ctrl+Click: Toggle selection
+    store.toggleSelection(index)
+    store.setCurrentIndex(index)
+  } else if (event.shiftKey) {
+    // Shift+Click: Select range
+    const lastIndex = store.lastSelectedIndex ?? store.currentIndex
+    store.selectRange(lastIndex, index)
+    store.setCurrentIndex(index)
+  } else {
+    // Normal click: Set current + select single
+    store.setCurrentIndex(index)
+    store.selectSingle(index)
+  }
 }
+
+// Handle Ctrl+A for select all
+const handleKeyDown = (event: KeyboardEvent): void => {
+  // Prevent selection if batch generation is active
+  if (store.isBatchGenerating) {
+    return
+  }
+
+  if ((event.ctrlKey || event.metaKey) && event.key === 'a' && store.hasImages) {
+    event.preventDefault()
+    store.selectAll()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
 
 // Watch for changes in current index and scroll to keep it visible
 watch(
@@ -42,10 +81,12 @@ watch(
         class="thumbnail-item"
         :class="{
           active: index === store.currentIndex,
-          modified: store.modifiedImages.has(image.id)
+          selected: store.selectedIndices.has(index),
+          modified: store.modifiedImages.has(image.id),
+          locked: store.isBatchGenerating
         }"
         :title="image.filename"
-        @click="selectImage(index)"
+        @click="selectImage(index, $event)"
       >
         <div class="thumbnail-wrapper">
           <img
@@ -53,6 +94,9 @@ watch(
             :alt="image.filename"
             draggable="false"
           />
+          <div v-if="store.selectedIndices.has(index)" class="selection-overlay">
+            <div class="selection-checkmark">✓</div>
+          </div>
           <div v-if="store.modifiedImages.has(image.id)" class="modified-indicator"></div>
         </div>
       </div>
@@ -105,6 +149,12 @@ watch(
   position: relative;
 }
 
+.thumbnail-item.locked {
+  cursor: not-allowed;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
 .thumbnail-item:hover {
   border-color: var(--text-muted);
 }
@@ -112,6 +162,14 @@ watch(
 .thumbnail-item.active {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 1px var(--accent-color);
+}
+
+.thumbnail-item.selected {
+  border-color: var(--accent-color);
+}
+
+.thumbnail-item.selected.active {
+  box-shadow: 0 0 0 2px var(--accent-color);
 }
 
 .thumbnail-wrapper {
@@ -129,6 +187,34 @@ watch(
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.selection-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(74, 158, 255, 0.15);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.selection-checkmark {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 20px;
+  height: 20px;
+  background: var(--accent-color);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .modified-indicator {

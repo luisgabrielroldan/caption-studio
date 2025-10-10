@@ -51,6 +51,8 @@ declare global {
     // Tray menu exposed functions
     __hasUnsavedChanges?: () => boolean
     __saveChanges?: () => Promise<void>
+    // Legacy batch generation flag (deprecated - use store.isBatchGenerating instead)
+    __batchGenerationActive?: boolean
   }
 }
 

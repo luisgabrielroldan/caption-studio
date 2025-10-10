@@ -17,6 +17,9 @@ export const useCaptionStore = defineStore('caption', () => {
   const currentIndex = ref<number>(0)
   const folderPath = ref<string>('')
   const isLoading = ref<boolean>(false)
+  const selectedIndices = ref<Set<number>>(new Set())
+  const lastSelectedIndex = ref<number | null>(null)
+  const isBatchGenerating = ref<boolean>(false)
 
   // Computed
   const currentImage = computed(() => {
@@ -42,10 +45,21 @@ export const useCaptionStore = defineStore('caption', () => {
 
   const hasImages = computed(() => images.value.length > 0)
 
+  const selectedImages = computed(() => {
+    return Array.from(selectedIndices.value)
+      .filter((index) => index >= 0 && index < images.value.length)
+      .map((index) => images.value[index])
+  })
+
+  const hasSelection = computed(() => selectedIndices.value.size > 0)
+
   // Actions
   function setImages(newImages: ImageItem[]): void {
     images.value = newImages
     currentIndex.value = newImages.length > 0 ? 0 : -1
+    // Clear selection when loading new images
+    selectedIndices.value.clear()
+    lastSelectedIndex.value = null
   }
 
   function setFolderPath(path: string): void {
@@ -92,6 +106,67 @@ export const useCaptionStore = defineStore('caption', () => {
     images.value = []
     currentIndex.value = -1
     folderPath.value = ''
+    selectedIndices.value.clear()
+    lastSelectedIndex.value = null
+  }
+
+  function toggleSelection(index: number): void {
+    if (index < 0 || index >= images.value.length) return
+    
+    if (selectedIndices.value.has(index)) {
+      selectedIndices.value.delete(index)
+    } else {
+      selectedIndices.value.add(index)
+    }
+    lastSelectedIndex.value = index
+  }
+
+  function selectRange(fromIndex: number, toIndex: number): void {
+    const start = Math.min(fromIndex, toIndex)
+    const end = Math.max(fromIndex, toIndex)
+    
+    selectedIndices.value.clear()
+    for (let i = start; i <= end; i++) {
+      if (i >= 0 && i < images.value.length) {
+        selectedIndices.value.add(i)
+      }
+    }
+    lastSelectedIndex.value = toIndex
+  }
+
+  function selectSingle(index: number): void {
+    if (index < 0 || index >= images.value.length) return
+    
+    selectedIndices.value.clear()
+    selectedIndices.value.add(index)
+    lastSelectedIndex.value = index
+  }
+
+  function selectAll(): void {
+    selectedIndices.value.clear()
+    for (let i = 0; i < images.value.length; i++) {
+      selectedIndices.value.add(i)
+    }
+    if (images.value.length > 0) {
+      lastSelectedIndex.value = images.value.length - 1
+    }
+  }
+
+  function clearSelection(): void {
+    selectedIndices.value.clear()
+    lastSelectedIndex.value = null
+  }
+
+  function updateCaptionForSelected(caption: string): void {
+    selectedIndices.value.forEach((index) => {
+      if (index >= 0 && index < images.value.length) {
+        images.value[index].currentCaption = caption
+      }
+    })
+  }
+
+  function setBatchGenerating(value: boolean): void {
+    isBatchGenerating.value = value
   }
 
   return {
@@ -100,6 +175,9 @@ export const useCaptionStore = defineStore('caption', () => {
     currentIndex,
     folderPath,
     isLoading,
+    selectedIndices,
+    lastSelectedIndex,
+    isBatchGenerating,
     // Computed
     currentImage,
     hasUnsavedChanges,
@@ -107,6 +185,8 @@ export const useCaptionStore = defineStore('caption', () => {
     totalImages,
     totalSize,
     hasImages,
+    selectedImages,
+    hasSelection,
     // Actions
     setImages,
     setFolderPath,
@@ -116,6 +196,13 @@ export const useCaptionStore = defineStore('caption', () => {
     updateCurrentCaption,
     resetChanges,
     markAsSaved,
-    clearAll
+    clearAll,
+    toggleSelection,
+    selectRange,
+    selectSingle,
+    selectAll,
+    clearSelection,
+    updateCaptionForSelected,
+    setBatchGenerating
   }
 })

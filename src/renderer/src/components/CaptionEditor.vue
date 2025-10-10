@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import { useCaptionStore } from '../stores/captionStore'
 import { useConfig } from '../composables/useConfig'
 import { useAutoCaptioner } from '../composables/useAutoCaptioner'
+import { useBatchCaptioning } from '../composables/useBatchCaptioning'
 import { CONFIG_KEYS, DEFAULTS, EVENTS } from '../constants'
 
 const store = useCaptionStore()
 const config = useConfig()
 const { isGenerating, generateCaption } = useAutoCaptioner()
+const { progress: batchProgress, batchGenerate, cancel: cancelBatch } = useBatchCaptioning()
 const localCaption = ref('')
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const dropdownOpen = ref(false)
@@ -72,12 +74,27 @@ onUnmounted(() => {
   document.removeEventListener('mousedown', handleClickOutside)
 })
 
-// Watch for changes in current image and update local caption
+// Check if all selected images have the same caption
+const getCommonCaption = (): string | null => {
+  if (store.selectedImages.length === 0) return null
+  if (store.selectedImages.length === 1) return store.selectedImages[0].currentCaption
+  
+  const firstCaption = store.selectedImages[0].currentCaption
+  const allSame = store.selectedImages.every((img) => img.currentCaption === firstCaption)
+  return allSame ? firstCaption : null
+}
+
+// Watch for changes in current image and selection
 watch(
-  () => store.currentImage,
-  (newImage) => {
-    if (newImage) {
-      localCaption.value = newImage.currentCaption
+  () => [store.currentImage?.id, store.selectedImages.length] as const,
+  () => {
+    if (store.selectedImages.length > 1) {
+      // Multiple images selected
+      const commonCaption = getCommonCaption()
+      localCaption.value = commonCaption ?? ''
+    } else if (store.currentImage) {
+      // Single image
+      localCaption.value = store.currentImage.currentCaption
     } else {
       localCaption.value = ''
     }
@@ -87,14 +104,26 @@ watch(
 
 // Update store when local caption changes
 const updateCaption = (): void => {
-  if (store.currentImage) {
+  if (store.selectedImages.length > 1) {
+    // Update all selected images
+    store.updateCaptionForSelected(localCaption.value)
+  } else if (store.currentImage) {
+    // Update single image
     store.updateCurrentCaption(localCaption.value)
   }
 }
 
 // Revert current caption to original
 const revertCaption = (): void => {
-  if (store.currentImage) {
+  if (store.selectedImages.length > 1) {
+    // Revert all selected images to their originals
+    store.selectedImages.forEach((img) => {
+      img.currentCaption = img.originalCaption
+    })
+    // Update local caption to show common value if any
+    const commonCaption = getCommonCaption()
+    localCaption.value = commonCaption ?? ''
+  } else if (store.currentImage) {
     localCaption.value = store.currentImage.originalCaption
     store.updateCurrentCaption(store.currentImage.originalCaption)
   }
@@ -104,10 +133,21 @@ const revertCaption = (): void => {
 const handleGenerateCaption = async (): Promise<void> => {
   if (!store.currentImage) return
 
-  const caption = await generateCaption(store.currentImage.path, 'replace', localCaption.value)
-  if (caption !== null) {
-    localCaption.value = caption
-    store.updateCurrentCaption(caption)
+  if (store.selectedImages.length > 1) {
+    // Multiple images selected - use batch generation
+    await batchGenerate(store.selectedImages, 'replace', generateCaption)
+    
+    // Refresh current caption in editor if current image was in selection
+    if (store.currentImage) {
+      localCaption.value = store.currentImage.currentCaption
+    }
+  } else {
+    // Single image - generate just for current
+    const caption = await generateCaption(store.currentImage.path, 'replace', localCaption.value)
+    if (caption !== null) {
+      localCaption.value = caption
+      store.updateCurrentCaption(caption)
+    }
   }
 }
 
@@ -116,12 +156,33 @@ const handleAppendCaption = async (): Promise<void> => {
   if (!store.currentImage) return
   dropdownOpen.value = false
 
-  const caption = await generateCaption(store.currentImage.path, 'append', localCaption.value)
-  if (caption !== null) {
-    localCaption.value = caption
-    store.updateCurrentCaption(caption)
+  if (store.selectedImages.length > 1) {
+    // Multiple images selected - use batch generation
+    await batchGenerate(store.selectedImages, 'append', generateCaption)
+    
+    // Refresh current caption in editor if current image was in selection
+    if (store.currentImage) {
+      localCaption.value = store.currentImage.currentCaption
+    }
+  } else {
+    // Single image - append just to current
+    const caption = await generateCaption(store.currentImage.path, 'append', localCaption.value)
+    if (caption !== null) {
+      localCaption.value = caption
+      store.updateCurrentCaption(caption)
+    }
   }
 }
+
+// Compute placeholder text
+const placeholderText = computed(() => {
+  if (store.selectedImages.length > 1) {
+    const commonCaption = getCommonCaption()
+    return commonCaption === null ? '(Multiple images selected - different captions)' : 'Enter caption for this image...'
+  }
+  return 'Enter caption for this image...'
+})
+
 
 // Toggle dropdown
 const toggleDropdown = (): void => {
@@ -188,6 +249,33 @@ defineExpose({
 
 <template>
   <div class="caption-editor">
+    <!-- Selection Banner -->
+    <div v-if="store.selectedImages.length > 1 && !batchProgress.isActive" class="selection-banner">
+      <span class="selection-count">
+        ✓ {{ store.selectedImages.length }} images selected
+        <span class="selection-hint">– edits will apply to all</span>
+      </span>
+    </div>
+
+    <!-- Batch Progress Banner -->
+    <div v-if="batchProgress.isActive" class="progress-banner">
+      <div class="progress-info">
+        <div class="progress-left">
+          <span class="progress-text">
+            Generating {{ batchProgress.current }} of {{ batchProgress.total }}
+          </span>
+          <span class="progress-filename">{{ batchProgress.currentFilename }}</span>
+        </div>
+        <button class="btn-cancel" @click="cancelBatch">Cancel</button>
+      </div>
+      <div class="progress-bar-container">
+        <div
+          class="progress-bar"
+          :style="{ width: `${(batchProgress.current / batchProgress.total) * 100}%` }"
+        ></div>
+      </div>
+    </div>
+
     <div class="editor-header">
       <span class="editor-title">Caption</span>
       <div class="header-actions">
@@ -195,17 +283,21 @@ defineExpose({
         <div ref="dropdownRef" class="split-button-group">
           <button
             class="action-btn split-btn-main"
-            :disabled="!store.currentImage || isGenerating"
-            title="Generate new caption (replaces existing)"
+            :disabled="!store.currentImage || isGenerating || batchProgress.isActive"
+            :title="
+              store.selectedImages.length > 1
+                ? `Generate captions for ${store.selectedImages.length} selected images`
+                : 'Generate new caption (replaces existing)'
+            "
             @click="handleGenerateCaption"
           >
-            <span v-if="isGenerating" class="spinner"></span>
+            <span v-if="isGenerating || batchProgress.isActive" class="spinner"></span>
             <span v-else>✨</span>
-            Generate
+            Generate{{ store.selectedImages.length > 1 ? ` (${store.selectedImages.length})` : '' }}
           </button>
           <button
             class="action-btn split-btn-toggle"
-            :disabled="!store.currentImage || isGenerating"
+            :disabled="!store.currentImage || isGenerating || batchProgress.isActive"
             :class="{ active: dropdownOpen }"
             title="More options"
             @click="toggleDropdown"
@@ -247,11 +339,13 @@ defineExpose({
         <button
           v-if="store.currentImage && store.modifiedImages.has(store.currentImage.id)"
           class="modified-badge"
-          title="Click to revert changes"
+          :class="{ disabled: batchProgress.isActive }"
+          :disabled="batchProgress.isActive"
+          :title="batchProgress.isActive ? 'Cannot revert during batch generation' : 'Click to revert changes'"
           @click="revertCaption"
         >
           <span class="badge-text">Modified</span>
-          <span class="badge-text-hover">Undo</span>
+          <span class="badge-text-hover">{{ batchProgress.isActive ? 'Wait...' : 'Undo' }}</span>
         </button>
       </div>
     </div>
@@ -287,8 +381,8 @@ defineExpose({
     <textarea
       ref="textareaRef"
       v-model="localCaption"
-      placeholder="Enter caption for this image..."
-      :disabled="!store.currentImage"
+      :placeholder="placeholderText"
+      :disabled="(!store.currentImage && store.selectedImages.length === 0) || batchProgress.isActive"
       class="caption-textarea"
       :style="{ fontSize: `${fontSize}px`, lineHeight: lineHeight }"
       @input="updateCaption"
@@ -303,6 +397,108 @@ defineExpose({
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
   height: 200px;
+}
+
+.selection-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(74, 158, 255, 0.1);
+  border-bottom: 1px solid var(--accent-color);
+  gap: 12px;
+}
+
+.selection-count {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.selection-hint {
+  opacity: 0.7;
+  font-weight: normal;
+  font-size: 0.95em;
+}
+
+.progress-banner {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  background: rgba(74, 158, 255, 0.15);
+  border-bottom: 1px solid var(--accent-color);
+  gap: 6px;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.progress-text {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.progress-filename {
+  font-size: 0.8em;
+  color: var(--text-tertiary);
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.btn-cancel {
+  padding: 4px 12px;
+  background: rgba(255, 59, 48, 0.1);
+  color: #ff3b30;
+  border: 1px solid rgba(255, 59, 48, 0.3);
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-cancel:hover {
+  background: rgba(255, 59, 48, 0.2);
+  border-color: #ff3b30;
+}
+
+.btn-cancel:active {
+  transform: scale(0.95);
+}
+
+.progress-bar-container {
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--accent-color);
+  border-radius: 2px;
+  transition: width 0.3s ease;
 }
 
 .editor-header {
@@ -612,6 +808,17 @@ defineExpose({
 
 .modified-badge:hover .badge-text-hover {
   opacity: 1;
+}
+
+.modified-badge.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modified-badge.disabled:hover {
+  background: rgba(255, 165, 0, 0.15);
+  border-color: rgba(255, 165, 0, 0.5);
+  color: var(--warning-color);
 }
 
 .caption-textarea {

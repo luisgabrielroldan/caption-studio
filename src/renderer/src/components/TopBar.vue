@@ -9,6 +9,10 @@ const formattedDatasetSize = computed(() => {
   if (store.totalSize === 0) return ''
   return formatFileSize(store.totalSize)
 })
+
+const discardAllChanges = (): void => {
+  store.resetChanges()
+}
 </script>
 
 <template>
@@ -28,10 +32,16 @@ const formattedDatasetSize = computed(() => {
     </div>
 
     <div class="right-section">
-      <div v-if="store.hasUnsavedChanges" class="status-indicator">
+      <button
+        v-if="store.hasUnsavedChanges"
+        class="status-indicator status-unsaved"
+        title="Click to discard all changes"
+        @click="discardAllChanges"
+      >
         <span class="unsaved-dot"></span>
-        <span class="unsaved-text">{{ Array.from(store.modifiedImages).length }} unsaved</span>
-      </div>
+        <span class="status-text">{{ Array.from(store.modifiedImages).length }} unsaved</span>
+        <span class="status-text-hover">Discard All</span>
+      </button>
 
       <div v-else-if="store.hasImages" class="status-indicator status-saved">
         <span class="saved-check">✓</span>
@@ -126,10 +136,31 @@ const formattedDatasetSize = computed(() => {
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
+  border-radius: 6px;
+}
+
+.status-unsaved {
+  position: relative;
   background: rgba(255, 165, 0, 0.1);
   border: 1px solid rgba(255, 165, 0, 0.3);
-  border-radius: 6px;
   animation: pulse 2s ease-in-out infinite;
+  cursor: pointer;
+  transition:
+    background 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.status-unsaved:hover {
+  background: rgba(255, 68, 68, 0.2);
+  border-color: #ff4444;
+  animation: none;
+}
+
+.status-unsaved:active {
+  transform: scale(0.95);
+  background: rgba(255, 68, 68, 0.3);
 }
 
 @keyframes pulse {
@@ -144,7 +175,7 @@ const formattedDatasetSize = computed(() => {
 
 .status-saved {
   background: rgba(76, 175, 80, 0.1);
-  border-color: rgba(76, 175, 80, 0.3);
+  border: 1px solid rgba(76, 175, 80, 0.3);
   animation: none;
 }
 
@@ -156,10 +187,37 @@ const formattedDatasetSize = computed(() => {
   box-shadow: 0 0 8px rgba(255, 165, 0, 0.6);
 }
 
-.unsaved-text {
+.status-text,
+.status-text-hover {
+  position: relative;
   font-size: 0.85em;
-  color: #ffb84d;
   font-weight: 500;
+  transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.status-text {
+  color: #ffb84d;
+}
+
+.status-text-hover {
+  position: absolute;
+  color: #ff4444;
+  opacity: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.status-unsaved:hover .status-text {
+  opacity: 0;
+}
+
+.status-unsaved:hover .status-text-hover {
+  opacity: 1;
+}
+
+.status-unsaved:hover .unsaved-dot {
+  opacity: 0;
 }
 
 .saved-check {

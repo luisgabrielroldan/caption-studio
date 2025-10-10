@@ -1,4 +1,4 @@
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, watchEffect, onUnmounted } from 'vue'
 import type { Ref } from 'vue'
 
 interface CanvasImageViewerOptions {
@@ -8,6 +8,13 @@ interface CanvasImageViewerOptions {
 /**
  * Canvas-based image viewer with true zoom and smooth panning
  * Renders images at actual resolution for crisp quality when zoomed
+ * 
+ * CRITICAL INITIALIZATION RULES:
+ * 1. Canvas MUST be sized before any drawing operations
+ * 2. Context transform MUST be reset before applying DPR scaling
+ * 3. Image loading MUST wait for canvas initialization (onMounted)
+ * 4. Always check refs exist before operations
+ * 5. handleResize() sets canvas.width/height which resets context state
  */
 export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
   const { currentImage } = options
@@ -15,6 +22,7 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
   // Refs
   const canvasRef = ref<HTMLCanvasElement | null>(null)
   const containerRef = ref<HTMLDivElement | null>(null)
+  const isInitialized = ref(false) // Track if canvas is ready
 
   // State
   const zoom = ref(1) // 1 = fit to screen, >1 = zoomed in
@@ -39,8 +47,18 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
 
   /**
    * Load image from path
+   * IMPORTANT: Only call after canvas is initialized (onMounted)
    */
   const loadImage = async (imagePath: string): Promise<void> => {
+    // SAFETY: Don't load if canvas isn't ready - prevents rendering bugs
+    if (!isInitialized.value) {
+      if (import.meta.env.DEV) {
+        console.error('[Canvas] Attempted to load image before canvas initialization!')
+        console.trace('[Canvas] Load stack trace:')
+      }
+      return
+    }
+
     isLoading.value = true
 
     return new Promise((resolve, reject) => {
@@ -49,8 +67,9 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
       img.onload = () => {
         loadedImage.value = img
         isLoading.value = false
+        // Ensure canvas is sized before calculating fit
+        handleResize()
         resetView()
-        requestRender()
         resolve()
       }
 
@@ -111,13 +130,14 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
    */
   const render = (): void => {
     const canvas = canvasRef.value
+    const container = containerRef.value
     const ctx = canvas?.getContext('2d')
     const img = loadedImage.value
 
-    if (!canvas || !ctx || !img) return
+    if (!canvas || !container || !ctx || !img) return
 
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    // Clear canvas using CSS pixel dimensions (context is already scaled by DPR)
+    ctx.clearRect(0, 0, container.clientWidth, container.clientHeight)
 
     // Calculate dimensions at current zoom
     const fit = imageFit.value
@@ -206,7 +226,6 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
 
     // Adjust pan to keep mouse position fixed in image space
     if (newZoom !== oldZoom) {
-      const zoomRatio = newZoom / oldZoom
       panX.value = mouseX - fit.x - imageX * fit.scale * newZoom - (fit.width - fit.width * newZoom) / 2
       panY.value = mouseY - fit.y - imageY * fit.scale * newZoom - (fit.height - fit.height * newZoom) / 2
     }
@@ -266,33 +285,57 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
 
   /**
    * Handle canvas resize
+   * CRITICAL: This resets canvas state! Must be called:
+   * - On mount (initial setup)
+   * - When container resizes
+   * - Before image loads (to ensure correct sizing)
    */
   const handleResize = (): void => {
-    if (!canvasRef.value || !containerRef.value) return
+    // SAFETY: Canvas must exist
+    if (!canvasRef.value || !containerRef.value) {
+      if (import.meta.env.DEV) {
+        console.warn('[Canvas] handleResize called before refs available - skipping')
+      }
+      return
+    }
 
     const container = containerRef.value
     const canvas = canvasRef.value
 
-    // Set canvas size to match container
-    const dpr = window.devicePixelRatio || 1
-    canvas.width = container.clientWidth * dpr
-    canvas.height = container.clientHeight * dpr
+    // Get the actual display size (CSS pixels)
+    const displayWidth = container.clientWidth
+    const displayHeight = container.clientHeight
 
-    // Scale context for HiDPI
-    const ctx = canvas.getContext('2d')
-    if (ctx) {
-      ctx.scale(dpr, dpr)
+    // SAFETY: Container must have size
+    if (displayWidth === 0 || displayHeight === 0) {
+      if (import.meta.env.DEV) {
+        console.warn('[Canvas] Container has no size, skipping resize. Check if container is visible.')
+      }
+      return
     }
 
-    // Update canvas CSS size
-    canvas.style.width = `${container.clientWidth}px`
-    canvas.style.height = `${container.clientHeight}px`
+    // Set canvas internal resolution for HiDPI
+    // WARNING: Setting canvas.width/height resets ALL context state!
+    const dpr = window.devicePixelRatio || 1
+    canvas.width = displayWidth * dpr
+    canvas.height = displayHeight * dpr
+
+    // Scale context for HiDPI rendering (all draw calls will use CSS pixels)
+    const ctx = canvas.getContext('2d')
+    if (!ctx) {
+      throw new Error('[Canvas] Failed to get 2d context')
+    }
+    
+    // CRITICAL: Always reset transform first to prevent accumulation
+    ctx.setTransform(1, 0, 0, 1, 0, 0) // Reset to identity matrix
+    ctx.scale(dpr, dpr) // Apply device pixel ratio scaling
 
     calculateImageFit()
     requestRender()
   }
 
   // Watch for image changes
+  // IMPORTANT: immediate: false prevents loading before canvas is ready
   watch(
     () => currentImage.value?.path,
     (newPath) => {
@@ -300,29 +343,60 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions) {
         loadImage(newPath)
       } else {
         loadedImage.value = null
-        requestRender()
+        if (canvasRef.value && containerRef.value) {
+          requestRender()
+        }
       }
     },
-    { immediate: true }
+    { immediate: false } // CRITICAL: Never set to true - must wait for onMounted
   )
 
   // Setup resize observer
   let resizeObserver: ResizeObserver | null = null
+  let isCanvasInitialized = false
 
-  onMounted(() => {
-    if (containerRef.value) {
-      resizeObserver = new ResizeObserver(() => {
-        handleResize()
-      })
-      resizeObserver.observe(containerRef.value)
-      handleResize()
+  // Use watchEffect to robustly handle ref initialization
+  // This will run when refs become available and automatically track dependencies
+  watchEffect(() => {
+    // Wait for both refs to be available
+    if (!containerRef.value || !canvasRef.value) {
+      return
     }
 
-    // Add global mouse up listener
+    // Only initialize once
+    if (isCanvasInitialized) {
+      return
+    }
+
+    isCanvasInitialized = true
+
+    // CRITICAL: DO NOT CHANGE THIS INITIALIZATION ORDER!
+    // Canvas bugs occur if steps are reordered or if image loads before canvas is sized
+
+    // Step 1: Size canvas FIRST (sets width/height, applies DPR transform)
+    handleResize()
+    
+    // Step 2: Mark as initialized (enables loadImage)
+    isInitialized.value = true
+    
+    // Step 3: Setup resize observer (watches for container size changes)
+    resizeObserver = new ResizeObserver(() => {
+      handleResize()
+    })
+    resizeObserver.observe(containerRef.value)
+
+    // Step 4: Load image LAST (if one exists)
+    if (currentImage.value?.path) {
+      loadImage(currentImage.value.path)
+    }
+
+    // Setup global mouse up listener for drag
     window.addEventListener('mouseup', handleMouseUp)
   })
 
   onUnmounted(() => {
+    // Cleanup
+    isInitialized.value = false
     if (resizeObserver) {
       resizeObserver.disconnect()
     }
