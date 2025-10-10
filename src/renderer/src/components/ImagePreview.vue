@@ -1,36 +1,33 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useCaptionStore } from '../stores/captionStore'
-import { useImageZoom } from '../composables/useImageZoom'
+import { useCanvasImageViewer } from '../composables/useCanvasImageViewer'
 import { formatFileSize } from '../utils/formatters'
 
 const store = useCaptionStore()
-const imageDimensions = ref<{ width: number; height: number } | null>(null)
-const fileSize = ref<number | null>(null)
 
-// Image zoom and pan logic
+// Canvas-based image viewer
 const {
+  canvasRef,
+  containerRef,
   zoom,
-  transformOrigin,
-  imageRef,
-  wrapperRef,
-  panX,
-  panY,
-  isZoomed,
-  cursorStyle,
+  isLoading,
+  isDragging,
+  loadedImage,
   handleWheel,
   handleMouseDown,
   handleMouseMove,
   handleMouseUp,
-  handleMouseLeave,
-  resetZoom
-} = useImageZoom({
+  resetView
+} = useCanvasImageViewer({
   currentImage: computed(() => store.currentImage)
 })
 
-const imageUrl = computed(() => {
-  if (!store.currentImage) return null
-  return `local-image://${encodeURIComponent(store.currentImage.path)}`
+const isZoomed = computed(() => zoom.value > 1.01)
+
+const cursorStyle = computed(() => {
+  if (!isZoomed.value) return 'default'
+  return isDragging.value ? 'grabbing' : 'grab'
 })
 
 const imageInfo = computed(() => {
@@ -46,49 +43,23 @@ const imageInfo = computed(() => {
     position: `${store.currentIndex + 1} / ${store.totalImages}`
   }
 
-  if (imageDimensions.value) {
-    info.dimensions = `${imageDimensions.value.width} × ${imageDimensions.value.height}`
+  // Get dimensions from loaded image
+  if (loadedImage.value) {
+    info.dimensions = `${loadedImage.value.naturalWidth} × ${loadedImage.value.naturalHeight}`
   }
 
-  if (fileSize.value !== null) {
-    info.fileSize = formatFileSize(fileSize.value)
+  // Get file size from store
+  if (store.currentImage.size) {
+    info.fileSize = formatFileSize(store.currentImage.size)
   }
 
   return info
 })
 
-// Load image metadata when image changes
-const loadImageMetadata = async (): Promise<void> => {
-  if (!store.currentImage) {
-    imageDimensions.value = null
-    fileSize.value = null
-    return
-  }
-
-  // Get file size from main process
-  const stats = await window.api.getImageFileStats(store.currentImage.path)
-  fileSize.value = stats?.size || null
-}
-
-// Handle image load to get dimensions
-const handleImageLoad = (event: Event): void => {
-  const img = event.target as HTMLImageElement
-  imageDimensions.value = {
-    width: img.naturalWidth,
-    height: img.naturalHeight
-  }
-}
-
-// Watch for image changes
-watch(
-  () => store.currentImage,
-  () => {
-    imageDimensions.value = null
-    fileSize.value = null
-    loadImageMetadata()
-  },
-  { immediate: true }
-)
+// Show zoom level when zoomed
+const zoomPercent = computed(() => {
+  return Math.round(zoom.value * 100)
+})
 </script>
 
 <template>
@@ -99,31 +70,21 @@ watch(
     <div v-else class="preview-container">
       <div class="preview-wrapper-outer">
         <div
-          ref="wrapperRef"
-          class="preview-wrapper"
+          ref="containerRef"
+          class="canvas-container"
           @wheel="handleWheel"
           @mousedown="handleMouseDown"
           @mousemove="handleMouseMove"
           @mouseup="handleMouseUp"
-          @mouseleave="handleMouseLeave"
         >
-          <img
-            ref="imageRef"
-            :src="imageUrl || ''"
-            :alt="imageInfo?.filename"
-            draggable="false"
-            :style="{
-              transform: `translate3d(${panX}px, ${panY}px, 0) scale(${zoom})`,
-              transformOrigin: transformOrigin,
-              cursor: cursorStyle,
-              willChange: isZoomed ? 'transform' : 'auto'
-            }"
-            @load="handleImageLoad"
-          />
+          <canvas ref="canvasRef" :style="{ cursor: cursorStyle }" />
+          <div v-if="isLoading" class="loading-overlay">
+            <div class="loading-spinner"></div>
+          </div>
         </div>
-        <button v-if="isZoomed" title="Reset zoom (1:1)" class="reset-zoom-btn" @click="resetZoom">
-          Reset Zoom
-        </button>
+        <div v-if="isZoomed" class="zoom-indicator" title="Click to reset zoom" @click="resetView">
+          {{ zoomPercent }}%
+        </div>
       </div>
       <div class="image-info">
         <span class="image-position">{{ imageInfo?.position }}</span>
@@ -166,50 +127,68 @@ watch(
   min-height: 0;
 }
 
-.preview-wrapper {
+.canvas-container {
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
+  position: relative;
   overflow: hidden;
-}
-
-.preview-wrapper {
   user-select: none;
 }
 
-.preview-wrapper img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+.canvas-container canvas {
   display: block;
-  border-radius: 4px;
-  transition: none;
-  /* High-quality image rendering for photos */
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: auto;
+  width: 100%;
+  height: 100%;
 }
 
-.reset-zoom-btn {
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.zoom-indicator {
   position: absolute;
   bottom: 20px;
-  right: 20px;
-  padding: 8px 16px;
+  left: 20px;
+  padding: 6px 12px;
   background: rgba(0, 0, 0, 0.7);
   color: #fff;
   border: 1px solid var(--text-muted);
   border-radius: 6px;
   font-size: 0.85em;
   font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
   backdrop-filter: blur(10px);
   z-index: 10;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
 }
 
-.reset-zoom-btn:hover {
+.zoom-indicator:hover {
   background: rgba(0, 0, 0, 0.85);
   border-color: var(--accent-color);
   transform: scale(1.05);
