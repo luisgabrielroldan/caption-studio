@@ -146,4 +146,17 @@ export function registerImageHandlers(): void {
   ipcMain.handle('image:getFileUrl', async (_event, imagePath: string) => {
     return `file://${imagePath}`
   })
+
+  // Get image file stats (size)
+  ipcMain.handle('image:getFileStats', async (_event, imagePath: string) => {
+    try {
+      const stats = await fs.stat(imagePath)
+      return {
+        size: stats.size
+      }
+    } catch (error) {
+      console.error('Error getting file stats:', error)
+      return null
+    }
+  })
 }

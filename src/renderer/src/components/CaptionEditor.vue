@@ -110,7 +110,7 @@ defineExpose({
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
+  padding: 6px 16px;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -180,12 +180,23 @@ defineExpose({
 .caption-textarea {
   flex: 1;
   padding: 16px 20px;
-  background: var(--bg-tertiary);
+  background: var(--bg-primary);
   color: var(--text-primary);
-  border: none;
+  border: 1px solid var(--border-color);
   resize: none;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   outline: none;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.caption-textarea:focus {
+  border-color: var(--accent-color);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.2),
+    0 0 0 2px rgba(74, 158, 255, 0.15);
 }
 
 .caption-textarea:disabled {

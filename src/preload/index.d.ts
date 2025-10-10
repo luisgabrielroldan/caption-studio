@@ -27,6 +27,7 @@ interface API {
   openFolder: (directPath?: string) => Promise<{ folderPath: string; images: ImageData[] } | null>
   saveCaptions: (updates: CaptionUpdate[]) => Promise<{ success: boolean }>
   getImageFileUrl: (imagePath: string) => Promise<string>
+  getImageFileStats: (imagePath: string) => Promise<{ size: number } | null>
   veil: () => Promise<void>
   config: ConfigAPI
 }

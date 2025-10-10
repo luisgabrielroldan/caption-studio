@@ -1,13 +1,7 @@
 <script setup lang="ts">
 import { useCaptionStore } from '../stores/captionStore'
-import { computed } from 'vue'
 
 const store = useCaptionStore()
-
-const currentPosition = computed(() => {
-  if (!store.hasImages) return null
-  return `${store.currentIndex + 1} / ${store.totalImages}`
-})
 </script>
 
 <template>
@@ -24,10 +18,6 @@ const currentPosition = computed(() => {
     </div>
 
     <div class="right-section">
-      <div v-if="currentPosition" class="position-indicator">
-        <span class="position-text">{{ currentPosition }}</span>
-      </div>
-
       <div v-if="store.hasUnsavedChanges" class="status-indicator">
         <span class="unsaved-dot"></span>
         <span class="unsaved-text">{{ Array.from(store.modifiedImages).length }} unsaved</span>
@@ -112,22 +102,6 @@ const currentPosition = computed(() => {
   display: flex;
   align-items: center;
   gap: 16px;
-}
-
-.position-indicator {
-  display: flex;
-  align-items: center;
-  padding: 4px 12px;
-  background: var(--bg-hover);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-}
-
-.position-text {
-  font-size: 0.85em;
-  color: var(--text-secondary);
-  font-weight: 500;
-  font-family: 'Monaco', 'Menlo', monospace;
 }
 
 .status-indicator {

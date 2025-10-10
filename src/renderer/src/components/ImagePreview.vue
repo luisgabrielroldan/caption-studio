@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useCaptionStore } from '../stores/captionStore'
 import { useImageZoom } from '../composables/useImageZoom'
 
 const store = useCaptionStore()
+const imageDimensions = ref<{ width: number; height: number } | null>(null)
+const fileSize = ref<number | null>(null)
 
 // Image zoom and pan logic
 const {
@@ -32,11 +34,72 @@ const imageUrl = computed(() => {
 
 const imageInfo = computed(() => {
   if (!store.currentImage) return null
-  return {
+
+  const info: {
+    filename: string
+    position: string
+    dimensions?: string
+    fileSize?: string
+  } = {
     filename: store.currentImage.filename,
     position: `${store.currentIndex + 1} / ${store.totalImages}`
   }
+
+  if (imageDimensions.value) {
+    info.dimensions = `${imageDimensions.value.width} × ${imageDimensions.value.height}`
+  }
+
+  if (fileSize.value !== null) {
+    info.fileSize = formatFileSize(fileSize.value)
+  }
+
+  return info
 })
+
+// Format file size in human-readable format
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 B'
+
+  const units = ['B', 'KB', 'MB', 'GB']
+  const k = 1024
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  const value = bytes / Math.pow(k, i)
+
+  return `${value.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
+}
+
+// Load image metadata when image changes
+const loadImageMetadata = async (): Promise<void> => {
+  if (!store.currentImage) {
+    imageDimensions.value = null
+    fileSize.value = null
+    return
+  }
+
+  // Get file size from main process
+  const stats = await window.api.getImageFileStats(store.currentImage.path)
+  fileSize.value = stats?.size || null
+}
+
+// Handle image load to get dimensions
+const handleImageLoad = (event: Event): void => {
+  const img = event.target as HTMLImageElement
+  imageDimensions.value = {
+    width: img.naturalWidth,
+    height: img.naturalHeight
+  }
+}
+
+// Watch for image changes
+watch(
+  () => store.currentImage,
+  () => {
+    imageDimensions.value = null
+    fileSize.value = null
+    loadImageMetadata()
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -66,6 +129,7 @@ const imageInfo = computed(() => {
               cursor: cursorStyle,
               willChange: isZoomed ? 'transform' : 'auto'
             }"
+            @load="handleImageLoad"
           />
         </div>
         <button v-if="isZoomed" title="Reset zoom (1:1)" class="reset-zoom-btn" @click="resetZoom">
@@ -75,6 +139,10 @@ const imageInfo = computed(() => {
       <div class="image-info">
         <span class="image-position">{{ imageInfo?.position }}</span>
         <span class="image-filename" :title="imageInfo?.filename">{{ imageInfo?.filename }}</span>
+        <div v-if="imageInfo?.dimensions || imageInfo?.fileSize" class="image-metadata">
+          <span v-if="imageInfo?.dimensions" class="metadata-item">{{ imageInfo.dimensions }}</span>
+          <span v-if="imageInfo?.fileSize" class="metadata-item">{{ imageInfo.fileSize }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -162,10 +230,10 @@ const imageInfo = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
+  padding: 6px 16px;
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
-  gap: 16px;
+  gap: 12px;
 }
 
 .image-position {
@@ -182,6 +250,25 @@ const imageInfo = computed(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
-  text-align: right;
+  text-align: center;
+  min-width: 0; /* Allow flex item to shrink below content size */
+  padding: 0 8px; /* Add some breathing room */
+}
+
+.image-metadata {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.metadata-item {
+  font-size: 0.8em;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  padding: 1px 4px;
+  background: var(--bg-hover);
+  border-radius: 3px;
+  border: 1px solid var(--border-color);
 }
 </style>

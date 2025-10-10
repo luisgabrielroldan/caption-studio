@@ -7,6 +7,7 @@ const api = {
   saveCaptions: (updates: { captionPath: string; caption: string }[]) =>
     ipcRenderer.invoke('captions:save', updates),
   getImageFileUrl: (imagePath: string) => ipcRenderer.invoke('image:getFileUrl', imagePath),
+  getImageFileStats: (imagePath: string) => ipcRenderer.invoke('image:getFileStats', imagePath),
   veil: () => ipcRenderer.invoke('window:veil'),
   // Config APIs
   config: {
