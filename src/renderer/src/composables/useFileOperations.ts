@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { useCaptionStore } from '../stores/captionStore'
+import { useConfig } from './useConfig'
 
 /**
  * Composable for file operations (open, save, close)
@@ -7,6 +8,7 @@ import { useCaptionStore } from '../stores/captionStore'
  */
 export function useFileOperations() {
   const store = useCaptionStore()
+  const config = useConfig()
   const isSaving = ref(false)
 
   const openFolder = async () => {
@@ -14,6 +16,13 @@ export function useFileOperations() {
     if (result) {
       store.setFolderPath(result.folderPath)
       store.setImages(result.images)
+      // Add to recent folders
+      await config.addRecentFolder(result.folderPath)
+      // Save as last opened folder if enabled
+      const rememberLastFolder = await config.get('behavior.rememberLastFolder')
+      if (rememberLastFolder) {
+        await config.set('behavior.lastOpenedFolder', result.folderPath)
+      }
     }
     return result
   }

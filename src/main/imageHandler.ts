@@ -97,16 +97,37 @@ async function saveCaptions(updates: CaptionUpdate[]): Promise<void> {
  */
 export function registerImageHandlers(): void {
   // Open folder dialog and load images
-  ipcMain.handle('dialog:openFolder', async () => {
-    const result = await dialog.showOpenDialog({
-      properties: ['openDirectory']
-    })
+  // Supports both dialog-based selection and direct path opening
+  ipcMain.handle('dialog:openFolder', async (_event, directPath?: string) => {
+    let folderPath: string | null = null
 
-    if (result.canceled || result.filePaths.length === 0) {
-      return null
+    if (directPath) {
+      // Direct path provided (e.g., from "remember last folder")
+      try {
+        const stats = await fs.stat(directPath)
+        if (stats.isDirectory()) {
+          folderPath = directPath
+        } else {
+          console.error('Provided path is not a directory:', directPath)
+          return null
+        }
+      } catch (error) {
+        console.error('Error accessing directory:', directPath, error)
+        return null
+      }
+    } else {
+      // Show dialog
+      const result = await dialog.showOpenDialog({
+        properties: ['openDirectory']
+      })
+
+      if (result.canceled || result.filePaths.length === 0) {
+        return null
+      }
+
+      folderPath = result.filePaths[0]
     }
 
-    const folderPath = result.filePaths[0]
     const images = await findImages(folderPath)
 
     return {

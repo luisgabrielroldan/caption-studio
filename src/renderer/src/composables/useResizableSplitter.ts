@@ -1,24 +1,22 @@
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useConfig } from './useConfig'
 
 interface ResizableSplitterOptions {
   defaultWidth?: number
   minWidth?: number
   maxWidth?: number
-  storageKey?: string
+  configKey?: string
 }
 
 /**
  * Composable for resizable panel splitter
- * Manages drag state, width constraints, and persistence
+ * Manages drag state, width constraints, and persistence via config
  */
 export function useResizableSplitter(options: ResizableSplitterOptions = {}) {
-  const {
-    defaultWidth = 280,
-    minWidth = 200,
-    maxWidth = 600,
-    storageKey = 'thumbnailPanelWidth'
-  } = options
+  const { defaultWidth = 280, minWidth = 200, maxWidth = 600, configKey = 'thumbnailPanelWidth' } =
+    options
 
+  const config = useConfig()
   const width = ref(defaultWidth)
   const isDragging = ref(false)
 
@@ -37,22 +35,19 @@ export function useResizableSplitter(options: ResizableSplitterOptions = {}) {
     }
   }
 
-  const handleMouseUp = () => {
+  const handleMouseUp = async () => {
     if (isDragging.value) {
       isDragging.value = false
-      // Save width to localStorage
-      localStorage.setItem(storageKey, width.value.toString())
+      // Save width to config
+      await config.set(configKey, width.value)
     }
   }
 
-  onMounted(() => {
-    // Load saved width from localStorage
-    const savedWidth = localStorage.getItem(storageKey)
-    if (savedWidth) {
-      const parsedWidth = parseInt(savedWidth, 10)
-      if (!isNaN(parsedWidth) && parsedWidth >= minWidth && parsedWidth <= maxWidth) {
-        width.value = parsedWidth
-      }
+  onMounted(async () => {
+    // Load saved width from config
+    const savedWidth = await config.get<number>(configKey)
+    if (savedWidth && savedWidth >= minWidth && savedWidth <= maxWidth) {
+      width.value = savedWidth
     }
 
     window.addEventListener('mousemove', handleMouseMove)

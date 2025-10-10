@@ -3,10 +3,19 @@ import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
 const api = {
-  openFolder: () => ipcRenderer.invoke('dialog:openFolder'),
+  openFolder: (directPath?: string) => ipcRenderer.invoke('dialog:openFolder', directPath),
   saveCaptions: (updates: { captionPath: string; caption: string }[]) =>
     ipcRenderer.invoke('captions:save', updates),
-  getImageFileUrl: (imagePath: string) => ipcRenderer.invoke('image:getFileUrl', imagePath)
+  getImageFileUrl: (imagePath: string) => ipcRenderer.invoke('image:getFileUrl', imagePath),
+  // Config APIs
+  config: {
+    getAll: () => ipcRenderer.invoke('config:get-all'),
+    get: (key: string) => ipcRenderer.invoke('config:get', key),
+    set: (key: string, value: any) => ipcRenderer.invoke('config:set', key, value),
+    reset: () => ipcRenderer.invoke('config:reset'),
+    addRecentFolder: (folderPath: string) => ipcRenderer.invoke('config:add-recent-folder', folderPath),
+    getRecentFolders: () => ipcRenderer.invoke('config:get-recent-folders')
+  }
 }
 
 // Expose electron with ipcRenderer for menu events
@@ -18,13 +27,15 @@ const electron = {
       const validChannels = [
         'menu:open-folder',
         'menu:save-captions',
+        'menu:reset-changes',
         'menu:close-folder',
         'menu:previous-image',
         'menu:next-image',
         'menu:first-image',
         'menu:last-image',
         'menu:focus-editor',
-        'menu:show-shortcuts'
+        'menu:show-shortcuts',
+        'menu:show-preferences'
       ]
       if (validChannels.includes(channel)) {
         ipcRenderer.on(channel, (event, ...args) => func(...args))

@@ -47,8 +47,8 @@ const currentPosition = computed(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 24px;
-  background: linear-gradient(to bottom, #1e1e1e 0%, #1a1a1a 100%);
-  border-bottom: 1px solid #2a2a2a;
+  background: linear-gradient(to bottom, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  border-bottom: 1px solid var(--border-color);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   min-height: 56px;
   gap: 24px;
@@ -72,16 +72,16 @@ const currentPosition = computed(() => {
 .app-name {
   font-size: 1.15em;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-primary);
   letter-spacing: -0.3px;
 }
 
 .image-count {
   font-size: 0.75em;
-  color: #888;
+  color: var(--text-tertiary);
   font-weight: 500;
   padding: 2px 8px;
-  background: #2a2a2a;
+  background: var(--bg-hover);
   border-radius: 10px;
 }
 
@@ -98,7 +98,7 @@ const currentPosition = computed(() => {
 }
 
 .folder-path {
-  color: #888;
+  color: var(--text-tertiary);
   max-width: 600px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -118,14 +118,14 @@ const currentPosition = computed(() => {
   display: flex;
   align-items: center;
   padding: 4px 12px;
-  background: #2a2a2a;
-  border: 1px solid #3a3a3a;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
 }
 
 .position-text {
   font-size: 0.85em;
-  color: #aaa;
+  color: var(--text-secondary);
   font-weight: 500;
   font-family: 'Monaco', 'Menlo', monospace;
 }
@@ -152,15 +152,15 @@ const currentPosition = computed(() => {
 }
 
 .status-saved {
-  background: rgba(16, 124, 16, 0.1);
-  border-color: rgba(16, 124, 16, 0.3);
+  background: rgba(76, 175, 80, 0.1);
+  border-color: rgba(76, 175, 80, 0.3);
   animation: none;
 }
 
 .unsaved-dot {
   width: 8px;
   height: 8px;
-  background: #ffa500;
+  background: var(--warning-color);
   border-radius: 50%;
   box-shadow: 0 0 8px rgba(255, 165, 0, 0.6);
 }
@@ -173,7 +173,7 @@ const currentPosition = computed(() => {
 
 .saved-check {
   font-size: 1em;
-  color: #13a10e;
+  color: var(--success-color);
   font-weight: 700;
 }
 

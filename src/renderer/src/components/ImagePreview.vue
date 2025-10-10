@@ -85,7 +85,7 @@ const imageInfo = computed(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #252525;
+  background: var(--bg-tertiary);
   overflow: hidden;
 }
 
@@ -94,7 +94,7 @@ const imageInfo = computed(() => {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .preview-container {
@@ -143,7 +143,7 @@ const imageInfo = computed(() => {
   padding: 8px 16px;
   background: rgba(0, 0, 0, 0.7);
   color: #fff;
-  border: 1px solid #555;
+  border: 1px solid var(--text-muted);
   border-radius: 6px;
   font-size: 0.85em;
   font-weight: 500;
@@ -155,7 +155,7 @@ const imageInfo = computed(() => {
 
 .reset-zoom-btn:hover {
   background: rgba(0, 0, 0, 0.85);
-  border-color: #0078d4;
+  border-color: var(--accent-color);
   transform: scale(1.05);
 }
 
@@ -164,21 +164,21 @@ const imageInfo = computed(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  background: #1e1e1e;
-  border-top: 1px solid #333;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
   gap: 16px;
 }
 
 .image-position {
   font-size: 0.9em;
-  color: #888;
+  color: var(--text-tertiary);
   font-weight: 500;
   white-space: nowrap;
 }
 
 .image-filename {
   font-size: 0.85em;
-  color: #aaa;
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

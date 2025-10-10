@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch, ref, nextTick } from 'vue'
+import { watch, ref, nextTick } from 'vue'
 import { useCaptionStore } from '../stores/captionStore'
 
 const store = useCaptionStore()
@@ -45,7 +45,10 @@ watch(
       >
         <div class="thumbnail-wrapper">
           <img :src="`local-image://${encodeURIComponent(image.path)}`" :alt="image.filename" draggable="false" />
-          <div v-if="store.modifiedImages.has(image.id)" class="modified-indicator">●</div>
+          <div
+            v-if="store.modifiedImages.has(image.id)"
+            class="modified-indicator"
+          ></div>
         </div>
       </div>
     </div>
@@ -56,7 +59,7 @@ watch(
 .thumbnail-list {
   width: 100%;
   height: 100%;
-  background: #1e1e1e;
+  background: var(--bg-secondary);
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -67,7 +70,7 @@ watch(
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #888;
+  color: var(--text-tertiary);
   padding: 20px;
   text-align: center;
 }
@@ -78,7 +81,7 @@ watch(
 
 .empty-state .hint {
   font-size: 0.85em;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .thumbnails-container {
@@ -98,31 +101,18 @@ watch(
 }
 
 .thumbnail-item:hover {
-  border-color: #555;
+  border-color: var(--text-muted);
 }
 
 .thumbnail-item.active {
-  border-color: #0078d4;
-  box-shadow: 0 0 0 1px #0078d4;
-}
-
-.thumbnail-item.modified::before {
-  content: '';
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 8px;
-  height: 8px;
-  background: #ffa500;
-  border-radius: 50%;
-  z-index: 2;
-  box-shadow: 0 0 4px rgba(255, 165, 0, 0.8);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 1px var(--accent-color);
 }
 
 .thumbnail-wrapper {
   width: 100%;
   aspect-ratio: 1;
-  background: #2a2a2a;
+  background: var(--bg-hover);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -138,12 +128,16 @@ watch(
 
 .modified-indicator {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  color: #ffa500;
-  font-size: 12px;
-  text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+  top: 6px;
+  right: 6px;
+  width: 12px;
+  height: 12px;
+  background: var(--warning-color);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
   z-index: 2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
 }
 
 /* Scrollbar styling */
@@ -152,16 +146,16 @@ watch(
 }
 
 .thumbnail-list::-webkit-scrollbar-track {
-  background: #1e1e1e;
+  background: var(--scrollbar-track);
 }
 
 .thumbnail-list::-webkit-scrollbar-thumb {
-  background: #444;
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 
 .thumbnail-list::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--scrollbar-thumb-hover);
 }
 </style>
 

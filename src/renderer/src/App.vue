@@ -1,16 +1,21 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useCaptionStore } from './stores/captionStore'
 import { useFileOperations } from './composables/useFileOperations'
 import { useKeyboardShortcuts } from './composables/useKeyboardShortcuts'
 import { useResizableSplitter } from './composables/useResizableSplitter'
+import { useConfig } from './composables/useConfig'
 import TopBar from './components/TopBar.vue'
 import ThumbnailList from './components/ThumbnailList.vue'
 import ImagePreview from './components/ImagePreview.vue'
 import CaptionEditor from './components/CaptionEditor.vue'
+import SettingsDialog from './components/SettingsDialog.vue'
 
 const store = useCaptionStore()
+const config = useConfig()
 const captionEditorRef = ref<InstanceType<typeof CaptionEditor> | null>(null)
+const settingsDialogRef = ref<InstanceType<typeof SettingsDialog> | null>(null)
+const currentTheme = ref<'dark' | 'light' | 'system'>('dark')
 
 // File operations
 const { openFolder, saveCaptions, closeFolder } = useFileOperations()
@@ -19,12 +24,70 @@ const { openFolder, saveCaptions, closeFolder } = useFileOperations()
 const { width: thumbnailWidth, isDragging: isDraggingSplitter, handleSplitterMouseDown } =
   useResizableSplitter()
 
+// Handle menu event for showing preferences
+const handleShowPreferences = () => {
+  settingsDialogRef.value?.show()
+}
+
+// Handle reset changes
+const handleResetChanges = () => {
+  if (!store.hasUnsavedChanges) {
+    alert('No changes to discard.')
+    return
+  }
+  
+  const confirmed = confirm(
+    `Are you sure you want to discard all ${store.modifiedImages.size} unsaved changes?\n\nThis cannot be undone.`
+  )
+  
+  if (confirmed) {
+    store.resetChanges()
+  }
+}
+
+// Theme management
+const getEffectiveTheme = (): 'dark' | 'light' => {
+  if (currentTheme.value === 'system') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  }
+  return currentTheme.value
+}
+
+const applyTheme = () => {
+  const effectiveTheme = getEffectiveTheme()
+  document.documentElement.setAttribute('data-theme', effectiveTheme)
+}
+
+// Load theme from config
+const loadTheme = async () => {
+  const uiConfig = await config.get('ui')
+  if (uiConfig?.theme) {
+    currentTheme.value = uiConfig.theme
+    applyTheme()
+  }
+}
+
+// Watch for system theme changes
+const systemThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+const handleSystemThemeChange = () => {
+  if (currentTheme.value === 'system') {
+    applyTheme()
+  }
+}
+
+// Listen for theme updates from settings dialog
+const handleThemeUpdate = async () => {
+  await loadTheme()
+}
+
 // Keyboard shortcuts
 useKeyboardShortcuts({
   onFocusEditor: () => captionEditorRef.value?.focusTextarea(),
   onOpenFolder: openFolder,
   onSaveCaptions: () => saveCaptions(false), // No alert for keyboard shortcut
-  onCloseFolder: closeFolder
+  onResetChanges: handleResetChanges,
+  onCloseFolder: closeFolder,
+  onShowPreferences: handleShowPreferences
 })
 
 // Warn before closing with unsaved changes
@@ -35,12 +98,52 @@ const handleBeforeUnload = (event: BeforeUnloadEvent) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('beforeunload', handleBeforeUnload)
+  
+  // Load and apply theme
+  await loadTheme()
+  
+  // Auto-open last folder if enabled
+  const behavior = await config.get('behavior')
+  if (behavior?.rememberLastFolder && behavior?.lastOpenedFolder) {
+    try {
+      // Simulate opening the last folder
+      const result = await window.api.openFolder(behavior.lastOpenedFolder)
+      if (result) {
+        store.setFolderPath(result.folderPath)
+        store.setImages(result.images)
+      }
+    } catch (error) {
+      console.error('Failed to open last folder:', error)
+    }
+  }
+  
+  // Listen for system theme changes
+  systemThemeMediaQuery.addEventListener('change', handleSystemThemeChange)
+  
+  // Listen for theme updates from settings (custom event)
+  window.addEventListener('theme-updated', handleThemeUpdate)
+  
+  // Listen for preferences menu event
+  // @ts-ignore
+  if (window.electron?.ipcRenderer) {
+    // @ts-ignore
+    window.electron.ipcRenderer.on('menu:show-preferences', handleShowPreferences)
+  }
 })
 
 onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
+  systemThemeMediaQuery.removeEventListener('change', handleSystemThemeChange)
+  window.removeEventListener('theme-updated', handleThemeUpdate)
+  
+  // Clean up preferences listener
+  // @ts-ignore
+  if (window.electron?.ipcRenderer?.removeAllListeners) {
+    // @ts-ignore
+    window.electron.ipcRenderer.removeAllListeners('menu:show-preferences')
+  }
 })
 </script>
 
@@ -61,6 +164,9 @@ onUnmounted(() => {
         <CaptionEditor ref="captionEditorRef" />
       </div>
     </div>
+    
+    <!-- Settings Dialog -->
+    <SettingsDialog ref="settingsDialogRef" />
   </div>
 </template>
 
@@ -70,8 +176,8 @@ onUnmounted(() => {
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
-  background: #1a1a1a;
-  color: #fff;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .app-container.dragging-splitter {
@@ -96,7 +202,7 @@ onUnmounted(() => {
 
 .splitter {
   width: 4px;
-  background: #2a2a2a;
+  background: var(--bg-hover);
   cursor: col-resize;
   transition: background 0.2s;
   flex-shrink: 0;
@@ -104,7 +210,7 @@ onUnmounted(() => {
 
 .splitter:hover,
 .splitter.dragging {
-  background: #4a9eff;
+  background: var(--accent-color);
 }
 
 .content-area {

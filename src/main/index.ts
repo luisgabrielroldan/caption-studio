@@ -4,9 +4,11 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerImageHandlers } from './imageHandler'
 import { createApplicationMenu } from './menu'
+import { initStore, registerConfigHandlers } from './config'
 import { readFile } from 'fs/promises'
 
 let mainWindow: BrowserWindow | null = null
+let configStore: any = null
 
 // Register privileged schemes before app is ready
 if (process.defaultApp) {
@@ -20,10 +22,15 @@ if (process.defaultApp) {
 }
 
 function createWindow(): void {
+  // Get stored window bounds or use defaults
+  const windowConfig = configStore ? configStore.get('window') : { width: 1400, height: 900 }
+
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
+    width: windowConfig.width,
+    height: windowConfig.height,
+    x: windowConfig.x,
+    y: windowConfig.y,
     show: false,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
@@ -34,6 +41,21 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
+  })
+
+  // Save window bounds when resized or moved
+  mainWindow.on('resize', () => {
+    if (mainWindow && !mainWindow.isMaximized() && !mainWindow.isMinimized() && configStore) {
+      const bounds = mainWindow.getBounds()
+      configStore.set('window', bounds)
+    }
+  })
+
+  mainWindow.on('move', () => {
+    if (mainWindow && !mainWindow.isMaximized() && !mainWindow.isMinimized() && configStore) {
+      const bounds = mainWindow.getBounds()
+      configStore.set('window', bounds)
+    }
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -94,8 +116,12 @@ app.whenReady().then(async () => {
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
 
-  // Register image handlers
+  // Initialize config store
+  configStore = await initStore()
+
+  // Register IPC handlers
   registerImageHandlers()
+  await registerConfigHandlers()
 
   createWindow()
 

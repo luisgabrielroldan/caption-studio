@@ -5,7 +5,9 @@ interface KeyboardShortcutsOptions {
   onFocusEditor?: () => void
   onOpenFolder?: () => void
   onSaveCaptions?: () => void
+  onResetChanges?: () => void
   onCloseFolder?: () => void
+  onShowPreferences?: () => void
 }
 
 /**
@@ -24,6 +26,8 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}) {
       window.electron.ipcRenderer.on('menu:open-folder', options.onOpenFolder || (() => {}))
       // @ts-ignore
       window.electron.ipcRenderer.on('menu:save-captions', options.onSaveCaptions || (() => {}))
+      // @ts-ignore
+      window.electron.ipcRenderer.on('menu:reset-changes', options.onResetChanges || (() => {}))
       // @ts-ignore
       window.electron.ipcRenderer.on('menu:close-folder', options.onCloseFolder || (() => {}))
       // @ts-ignore
@@ -107,12 +111,22 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}) {
       event.preventDefault()
       options.onSaveCaptions?.()
     }
-    // Ctrl/Cmd+W: Close folder
-    else if (cmdOrCtrl && event.key === 'w') {
+    // Ctrl/Cmd+Shift+R: Reset all changes
+    else if (cmdOrCtrl && event.shiftKey && event.key === 'R') {
       event.preventDefault()
-      options.onCloseFolder?.()
+      options.onResetChanges?.()
     }
+  // Ctrl/Cmd+W: Close folder
+  else if (cmdOrCtrl && event.key === 'w') {
+    event.preventDefault()
+    options.onCloseFolder?.()
   }
+  // Ctrl/Cmd+,: Open preferences
+  else if (cmdOrCtrl && event.key === ',') {
+    event.preventDefault()
+    options.onShowPreferences?.()
+  }
+}
 
   onMounted(() => {
     window.addEventListener('keydown', handleKeyDown)
@@ -128,6 +142,8 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}) {
       window.electron.ipcRenderer.removeAllListeners('menu:open-folder')
       // @ts-ignore
       window.electron.ipcRenderer.removeAllListeners('menu:save-captions')
+      // @ts-ignore
+      window.electron.ipcRenderer.removeAllListeners('menu:reset-changes')
       // @ts-ignore
       window.electron.ipcRenderer.removeAllListeners('menu:close-folder')
       // @ts-ignore

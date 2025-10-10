@@ -35,12 +35,28 @@ export function createApplicationMenu(mainWindow: BrowserWindow | null): void {
             mainWindow?.webContents.send('menu:open-folder')
           }
         },
+        {
+          label: 'Open Recent',
+          submenu: [
+            {
+              label: 'Recent folders will appear here',
+              enabled: false
+            }
+          ]
+        },
         { type: 'separator' },
         {
           label: 'Save All Captions',
           accelerator: 'CmdOrCtrl+S',
           click: () => {
             mainWindow?.webContents.send('menu:save-captions')
+          }
+        },
+        {
+          label: 'Discard All Changes',
+          accelerator: 'CmdOrCtrl+Shift+R',
+          click: () => {
+            mainWindow?.webContents.send('menu:reset-changes')
           }
         },
         { type: 'separator' },
@@ -52,6 +68,18 @@ export function createApplicationMenu(mainWindow: BrowserWindow | null): void {
           }
         },
         { type: 'separator' },
+        ...(isMac
+          ? [
+              {
+                label: 'Preferences...',
+                accelerator: 'Cmd+,',
+                click: () => {
+                  mainWindow?.webContents.send('menu:show-preferences')
+                }
+              },
+              { type: 'separator' as const }
+            ]
+          : []),
         isMac ? { role: 'close' as const } : { role: 'quit' as const }
       ]
     },
