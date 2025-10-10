@@ -1,6 +1,5 @@
 import { onMounted, onUnmounted } from 'vue'
 import { useCaptionStore } from '../stores/captionStore'
-import type { Ref } from 'vue'
 
 interface KeyboardShortcutsOptions {
   onFocusEditor?: () => void
@@ -10,11 +9,39 @@ interface KeyboardShortcutsOptions {
 }
 
 /**
- * Composable for global keyboard shortcuts
+ * Composable for global keyboard shortcuts and menu events
  * Handles navigation, focus management, and file operations
+ * from both keyboard and native menu
  */
 export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}) {
   const store = useCaptionStore()
+
+  // Handle menu events from main process
+  const handleMenuEvents = () => {
+    // @ts-ignore - electron API from preload
+    if (window.electron?.ipcRenderer) {
+      // @ts-ignore
+      window.electron.ipcRenderer.on('menu:open-folder', options.onOpenFolder || (() => {}))
+      // @ts-ignore
+      window.electron.ipcRenderer.on('menu:save-captions', options.onSaveCaptions || (() => {}))
+      // @ts-ignore
+      window.electron.ipcRenderer.on('menu:close-folder', options.onCloseFolder || (() => {}))
+      // @ts-ignore
+      window.electron.ipcRenderer.on('menu:previous-image', () => store.previousImage())
+      // @ts-ignore
+      window.electron.ipcRenderer.on('menu:next-image', () => store.nextImage())
+      // @ts-ignore
+      window.electron.ipcRenderer.on('menu:first-image', () => {
+        if (store.totalImages > 0) store.setCurrentIndex(0)
+      })
+      // @ts-ignore
+      window.electron.ipcRenderer.on('menu:last-image', () => {
+        if (store.totalImages > 0) store.setCurrentIndex(store.totalImages - 1)
+      })
+      // @ts-ignore
+      window.electron.ipcRenderer.on('menu:focus-editor', options.onFocusEditor || (() => {}))
+    }
+  }
 
   const handleKeyDown = async (event: KeyboardEvent) => {
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
@@ -89,10 +116,31 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions = {}) {
 
   onMounted(() => {
     window.addEventListener('keydown', handleKeyDown)
+    handleMenuEvents()
   })
 
   onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown)
+    // Clean up menu event listeners
+    // @ts-ignore
+    if (window.electron?.ipcRenderer?.removeAllListeners) {
+      // @ts-ignore
+      window.electron.ipcRenderer.removeAllListeners('menu:open-folder')
+      // @ts-ignore
+      window.electron.ipcRenderer.removeAllListeners('menu:save-captions')
+      // @ts-ignore
+      window.electron.ipcRenderer.removeAllListeners('menu:close-folder')
+      // @ts-ignore
+      window.electron.ipcRenderer.removeAllListeners('menu:previous-image')
+      // @ts-ignore
+      window.electron.ipcRenderer.removeAllListeners('menu:next-image')
+      // @ts-ignore
+      window.electron.ipcRenderer.removeAllListeners('menu:first-image')
+      // @ts-ignore
+      window.electron.ipcRenderer.removeAllListeners('menu:last-image')
+      // @ts-ignore
+      window.electron.ipcRenderer.removeAllListeners('menu:focus-editor')
+    }
   })
 
   return {

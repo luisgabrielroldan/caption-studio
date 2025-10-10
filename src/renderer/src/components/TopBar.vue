@@ -1,47 +1,42 @@
 <script setup lang="ts">
 import { useCaptionStore } from '../stores/captionStore'
-import { useFileOperations } from '../composables/useFileOperations'
+import { computed } from 'vue'
 
 const store = useCaptionStore()
-const { isSaving, openFolder, saveCaptions, closeFolder } = useFileOperations()
 
-const saveAllCaptions = async () => {
-  await saveCaptions(true) // Show alert on success
-}
+const currentPosition = computed(() => {
+  if (!store.hasImages) return null
+  return `${store.currentIndex + 1} / ${store.totalImages}`
+})
 </script>
 
 <template>
   <div class="top-bar">
-    <div class="title-section">
-      <h1>Caption Studio</h1>
-      <div v-if="store.folderPath" class="folder-path" :title="store.folderPath">
-        {{ store.folderPath }}
+    <div class="left-section">
+      <div class="app-title">
+        <span class="app-name">Caption Studio</span>
+        <span v-if="store.hasImages" class="image-count">{{ store.totalImages }} images</span>
+      </div>
+      <div v-if="store.folderPath" class="folder-info">
+        <span class="folder-icon">📁</span>
+        <span class="folder-path" :title="store.folderPath">{{ store.folderPath }}</span>
       </div>
     </div>
-    <div class="actions">
-      <button @click="openFolder" class="btn btn-primary" title="Ctrl/Cmd+O">
-        📁 Open Folder
-      </button>
-      <button
-        @click="saveAllCaptions"
-        class="btn btn-success"
-        :disabled="!store.hasUnsavedChanges || isSaving"
-        title="Ctrl/Cmd+S"
-      >
-        <span v-if="!isSaving">💾 Save All</span>
-        <span v-else>Saving...</span>
-        <span v-if="store.hasUnsavedChanges" class="unsaved-count">
-          ({{ Array.from(store.modifiedImages).length }})
-        </span>
-      </button>
-      <button
-        @click="closeFolder"
-        class="btn btn-secondary"
-        :disabled="!store.hasImages"
-        title="Ctrl/Cmd+W"
-      >
-        ✕ Close
-      </button>
+
+    <div class="right-section">
+      <div v-if="currentPosition" class="position-indicator">
+        <span class="position-text">{{ currentPosition }}</span>
+      </div>
+
+      <div v-if="store.hasUnsavedChanges" class="status-indicator">
+        <span class="unsaved-dot"></span>
+        <span class="unsaved-text">{{ Array.from(store.modifiedImages).length }} unsaved</span>
+      </div>
+
+      <div v-else-if="store.hasImages" class="status-indicator status-saved">
+        <span class="saved-check">✓</span>
+        <span class="saved-text">All saved</span>
+      </div>
     </div>
   </div>
 </template>
@@ -51,86 +46,148 @@ const saveAllCaptions = async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
-  background: #1a1a1a;
-  border-bottom: 1px solid #333;
+  padding: 12px 24px;
+  background: linear-gradient(to bottom, #1e1e1e 0%, #1a1a1a 100%);
+  border-bottom: 1px solid #2a2a2a;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  min-height: 56px;
+  gap: 24px;
 }
 
-.title-section {
+/* Left Section */
+.left-section {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
-.title-section h1 {
-  font-size: 1.2em;
-  font-weight: 600;
-  color: #fff;
-  margin: 0;
-}
-
-.folder-path {
-  font-size: 0.75em;
-  color: #888;
-  max-width: 400px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.actions {
+.app-title {
   display: flex;
+  align-items: baseline;
   gap: 12px;
 }
 
-.btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.9em;
+.app-name {
+  font-size: 1.15em;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+}
+
+.image-count {
+  font-size: 0.75em;
+  color: #888;
   font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  padding: 2px 8px;
+  background: #2a2a2a;
+  border-radius: 10px;
+}
+
+.folder-info {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  font-size: 0.8em;
 }
 
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.folder-icon {
+  font-size: 0.9em;
+  opacity: 0.7;
 }
 
-.btn-primary {
-  background: #0078d4;
-  color: #fff;
+.folder-path {
+  color: #888;
+  max-width: 600px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.95em;
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: #106ebe;
+/* Right Section */
+.right-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-.btn-success {
-  background: #107c10;
-  color: #fff;
+.position-indicator {
+  display: flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
 }
 
-.btn-success:hover:not(:disabled) {
-  background: #0e6b0e;
-}
-
-.btn-secondary {
-  background: #444;
-  color: #fff;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #555;
-}
-
-.unsaved-count {
+.position-text {
   font-size: 0.85em;
-  opacity: 0.9;
+  color: #aaa;
+  font-weight: 500;
+  font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(255, 165, 0, 0.1);
+  border: 1px solid rgba(255, 165, 0, 0.3);
+  border-radius: 6px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.status-saved {
+  background: rgba(16, 124, 16, 0.1);
+  border-color: rgba(16, 124, 16, 0.3);
+  animation: none;
+}
+
+.unsaved-dot {
+  width: 8px;
+  height: 8px;
+  background: #ffa500;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(255, 165, 0, 0.6);
+}
+
+.unsaved-text {
+  font-size: 0.85em;
+  color: #ffb84d;
+  font-weight: 500;
+}
+
+.saved-check {
+  font-size: 1em;
+  color: #13a10e;
+  font-weight: 700;
+}
+
+.saved-text {
+  font-size: 0.85em;
+  color: #5ac058;
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .folder-path {
+    max-width: 400px;
+  }
 }
 </style>
 

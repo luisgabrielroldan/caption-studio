@@ -3,7 +3,10 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerImageHandlers } from './imageHandler'
+import { createApplicationMenu } from './menu'
 import { readFile } from 'fs/promises'
+
+let mainWindow: BrowserWindow | null = null
 
 // Register privileged schemes before app is ready
 if (process.defaultApp) {
@@ -18,11 +21,10 @@ if (process.defaultApp) {
 
 function createWindow(): void {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     show: false,
-    autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -31,7 +33,7 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+    mainWindow?.show()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -46,6 +48,9 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  // Create application menu
+  createApplicationMenu(mainWindow)
 }
 
 // This method will be called when Electron has finished
@@ -61,7 +66,7 @@ app.whenReady().then(async () => {
       const url = request.url.replace('local-image://', '')
       const imagePath = decodeURIComponent(url)
       const data = await readFile(imagePath)
-      
+
       // Determine mime type based on extension
       let mimeType = 'image/jpeg'
       if (imagePath.toLowerCase().endsWith('.png')) {
@@ -69,8 +74,8 @@ app.whenReady().then(async () => {
       } else if (imagePath.toLowerCase().endsWith('.webp')) {
         mimeType = 'image/webp'
       }
-      
-      return new Response(data, {
+
+      return new Response(new Uint8Array(data), {
         headers: { 'Content-Type': mimeType }
       })
     } catch (error) {
