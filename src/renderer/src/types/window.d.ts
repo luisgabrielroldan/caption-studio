@@ -38,6 +38,9 @@ export interface MainAPI {
   getImageFileStats: (imagePath: string) => Promise<{ size: number } | null>
   veil: () => Promise<void>
   config: ConfigAPI
+  autoCaptioner: {
+    generate: (imagePath: string) => Promise<string>
+  }
 }
 
 // Extend Window interface

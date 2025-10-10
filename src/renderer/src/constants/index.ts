@@ -44,6 +44,17 @@ export const CONFIG_KEYS = {
   FEATURES: 'features',
   FEATURES_VEIL_KEY: 'features.veilKey',
 
+  // Auto Captioner
+  AUTO_CAPTIONER: 'autoCaptioner',
+  AUTO_CAPTIONER_PROVIDER: 'autoCaptioner.provider',
+  AUTO_CAPTIONER_SYSTEM_PROMPT: 'autoCaptioner.systemPrompt',
+  AUTO_CAPTIONER_TEMPERATURE: 'autoCaptioner.temperature',
+  AUTO_CAPTIONER_MAX_TOKENS: 'autoCaptioner.maxTokens',
+  AUTO_CAPTIONER_CUSTOM_BASE_URL: 'autoCaptioner.custom.baseUrl',
+  AUTO_CAPTIONER_CUSTOM_MODEL_NAME: 'autoCaptioner.custom.modelName',
+  AUTO_CAPTIONER_CHATGPT_API_KEY: 'autoCaptioner.chatgpt.apiKey',
+  AUTO_CAPTIONER_CHATGPT_MODEL_NAME: 'autoCaptioner.chatgpt.modelName',
+
   // Panel settings
   THUMBNAIL_PANEL_WIDTH: 'thumbnailPanelWidth'
 } as const
@@ -71,7 +82,15 @@ export const DEFAULTS = {
   VEIL_KEY: 'Shift + F12',
   THUMBNAIL_WIDTH: 280,
   MIN_ZOOM: 1,
-  MAX_ZOOM: 5
+  MAX_ZOOM: 5,
+  AUTO_CAPTIONER_PROVIDER: 'custom' as 'custom' | 'chatgpt',
+  AUTO_CAPTIONER_SYSTEM_PROMPT: 'Describe this image for AI training purposes. Be concise and objective.',
+  AUTO_CAPTIONER_TEMPERATURE: 0.7,
+  AUTO_CAPTIONER_MAX_TOKENS: 300,
+  AUTO_CAPTIONER_CUSTOM_BASE_URL: 'http://127.0.0.1:1234/v1',
+  AUTO_CAPTIONER_CUSTOM_MODEL_NAME: 'llava:latest',
+  AUTO_CAPTIONER_CHATGPT_API_KEY: '',
+  AUTO_CAPTIONER_CHATGPT_MODEL_NAME: 'gpt-4o'
 }
 
 // UI constraints
@@ -82,5 +101,11 @@ export const CONSTRAINTS = {
   FONT_SIZE_MAX: 24,
   LINE_HEIGHT_MIN: 1,
   LINE_HEIGHT_MAX: 3,
-  LINE_HEIGHT_STEP: 0.1
+  LINE_HEIGHT_STEP: 0.1,
+  TEMPERATURE_MIN: 0,
+  TEMPERATURE_MAX: 2,
+  TEMPERATURE_STEP: 0.1,
+  MAX_TOKENS_MIN: 50,
+  MAX_TOKENS_MAX: 1000,
+  MAX_TOKENS_STEP: 50
 } as const

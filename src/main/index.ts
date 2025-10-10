@@ -15,6 +15,7 @@ import icon from '../../resources/icon.png?asset'
 import { registerImageHandlers } from './imageHandler'
 import { createApplicationMenu } from './menu'
 import { initStore, registerConfigHandlers } from './config'
+import { registerAutoCaptionerHandlers } from './autoCaptionerService'
 import { readFile } from 'fs/promises'
 
 let mainWindow: BrowserWindow | null = null
@@ -239,6 +240,7 @@ app.whenReady().then(async () => {
   // Register IPC handlers
   registerImageHandlers()
   await registerConfigHandlers()
+  registerAutoCaptionerHandlers()
 
   // Register veil handler
   ipcMain.handle('window:veil', () => {

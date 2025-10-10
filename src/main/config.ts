@@ -39,6 +39,21 @@ interface ConfigSchema {
   features: {
     veilKey: string
   }
+  // Auto Captioner
+  autoCaptioner: {
+    provider: 'custom' | 'chatgpt'
+    systemPrompt: string
+    temperature: number
+    maxTokens: number
+    custom: {
+      baseUrl: string
+      modelName: string
+    }
+    chatgpt: {
+      apiKey: string
+      modelName: string
+    }
+  }
 }
 
 const defaultConfig: ConfigSchema = {
@@ -67,6 +82,20 @@ const defaultConfig: ConfigSchema = {
   },
   features: {
     veilKey: 'Shift + F12'
+  },
+  autoCaptioner: {
+    provider: 'custom',
+    systemPrompt: 'Describe this image for AI training purposes. Be concise and objective.',
+    temperature: 0.7,
+    maxTokens: 300,
+    custom: {
+      baseUrl: 'http://127.0.0.1:1234/v1',
+      modelName: 'llava:latest'
+    },
+    chatgpt: {
+      apiKey: '',
+      modelName: 'gpt-4o'
+    }
   }
 }
 

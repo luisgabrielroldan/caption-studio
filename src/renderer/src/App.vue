@@ -40,8 +40,14 @@ useVeil()
 useTheme()
 
 // Handle menu event for showing preferences
-const handleShowPreferences = (): void => {
-  settingsDialogRef.value?.show()
+const handleShowPreferences = (tab?: 'general' | 'autoCaptioner'): void => {
+  settingsDialogRef.value?.show(tab)
+}
+
+// Handle custom event from components
+const handleOpenSettings = (event: Event): void => {
+  const customEvent = event as CustomEvent<{ tab?: 'general' | 'autoCaptioner' }>
+  handleShowPreferences(customEvent.detail?.tab)
 }
 
 // Handle reset changes
@@ -101,7 +107,13 @@ onMounted(async () => {
   }
 
   // Listen for preferences menu event
-  cleanupIpcListener = registerIpcListener(MENU_EVENTS.SHOW_PREFERENCES, handleShowPreferences)
+  cleanupIpcListener = registerIpcListener(MENU_EVENTS.SHOW_PREFERENCES, (...args: unknown[]) => {
+    const tab = args[0] as 'general' | 'autoCaptioner' | undefined
+    handleShowPreferences(tab)
+  })
+
+  // Listen for custom open-settings event
+  window.addEventListener('open-settings', handleOpenSettings)
 })
 
 onUnmounted(() => {
@@ -109,6 +121,8 @@ onUnmounted(() => {
   if (cleanupIpcListener) {
     cleanupIpcListener()
   }
+  // Clean up custom event listener
+  window.removeEventListener('open-settings', handleOpenSettings)
 })
 </script>
 
