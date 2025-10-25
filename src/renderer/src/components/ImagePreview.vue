@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useCaptionStore } from '../stores/captionStore'
 import { useCanvasImageViewer } from '../composables/useCanvasImageViewer'
 import { formatFileSize } from '../utils/formatters'
+import VideoPreview from './VideoPreview.vue'
 
 const store = useCaptionStore()
 
@@ -60,12 +61,28 @@ const imageInfo = computed(() => {
 const zoomPercent = computed(() => {
   return Math.round(zoom.value * 100)
 })
+
+// Handle video duration loaded
+const handleDurationLoaded = (duration: number): void => {
+  if (store.currentImage) {
+    store.currentImage.duration = duration
+  }
+}
 </script>
 
 <template>
   <div class="image-preview">
     <div v-if="!store.currentImage" class="empty-preview">
-      <p>No image selected</p>
+      <p>No media selected</p>
+    </div>
+    <div v-else-if="store.currentImage.mediaType === 'video'" class="preview-container">
+      <VideoPreview
+        :video-path="store.currentImage.path"
+        :filename="store.currentImage.filename"
+        :position="`${store.currentIndex + 1} / ${store.totalImages}`"
+        :file-size="store.currentImage.size"
+        @duration-loaded="handleDurationLoaded"
+      />
     </div>
     <div v-else class="preview-container">
       <div class="preview-wrapper-outer">

@@ -2,7 +2,9 @@ import { dialog, ipcMain } from 'electron'
 import * as fs from 'fs/promises'
 import * as path from 'path'
 
-const SUPPORTED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp']
+const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp']
+const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov']
+const SUPPORTED_EXTENSIONS = [...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS]
 
 interface ImageData {
   id: string
@@ -12,6 +14,8 @@ interface ImageData {
   originalCaption: string
   currentCaption: string
   size: number // File size in bytes
+  mediaType: 'image' | 'video'
+  duration?: number // Video duration in seconds (only for videos)
 }
 
 interface CaptionUpdate {
@@ -40,6 +44,11 @@ async function findImages(dirPath: string): Promise<ImageData[]> {
             const baseName = entry.name.substring(0, entry.name.length - ext.length)
             const captionPath = path.join(currentPath, `${baseName}.txt`)
 
+            // Determine media type
+            const mediaType: 'image' | 'video' = IMAGE_EXTENSIONS.includes(ext)
+              ? 'image'
+              : 'video'
+
             // Try to read existing caption
             let caption = ''
             try {
@@ -66,7 +75,9 @@ async function findImages(dirPath: string): Promise<ImageData[]> {
               captionPath,
               originalCaption: caption,
               currentCaption: caption,
-              size: fileSize
+              size: fileSize,
+              mediaType
+              // Note: duration will be extracted on the renderer side for videos
             })
           }
         }

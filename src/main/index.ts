@@ -16,7 +16,7 @@ import { registerImageHandlers } from './imageHandler'
 import { createApplicationMenu } from './menu'
 import { initStore, registerConfigHandlers } from './config'
 import { registerAutoCaptionerHandlers } from './autoCaptionerService'
-import { readFile } from 'fs/promises'
+import { readFile, stat, open } from 'fs/promises'
 
 let mainWindow: BrowserWindow | null = null
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -200,27 +200,81 @@ app.whenReady().then(async () => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
-  // Register custom protocol for loading local images
+  // Register custom protocol for loading local images and videos
+  // Videos require range request support for seeking
   protocol.handle('local-image', async (request) => {
     try {
       const url = request.url.replace('local-image://', '')
-      const imagePath = decodeURIComponent(url)
-      const data = await readFile(imagePath)
+      const filePath = decodeURIComponent(url)
 
       // Determine mime type based on extension
-      let mimeType = 'image/jpeg'
-      if (imagePath.toLowerCase().endsWith('.png')) {
+      let mimeType = 'application/octet-stream'
+      const lowerPath = filePath.toLowerCase()
+      
+      // Images
+      if (lowerPath.endsWith('.png')) {
         mimeType = 'image/png'
-      } else if (imagePath.toLowerCase().endsWith('.webp')) {
+      } else if (lowerPath.endsWith('.webp')) {
         mimeType = 'image/webp'
+      } else if (lowerPath.endsWith('.jpg') || lowerPath.endsWith('.jpeg')) {
+        mimeType = 'image/jpeg'
+      }
+      // Videos
+      else if (lowerPath.endsWith('.mp4')) {
+        mimeType = 'video/mp4'
+      } else if (lowerPath.endsWith('.webm')) {
+        mimeType = 'video/webm'
+      } else if (lowerPath.endsWith('.mov')) {
+        mimeType = 'video/quicktime'
       }
 
-      return new Response(new Uint8Array(data), {
-        headers: { 'Content-Type': mimeType }
-      })
+      // Get file stats for range request support
+      const stats = await stat(filePath)
+      const fileSize = stats.size
+
+      // Check for range request (needed for video seeking)
+      const rangeHeader = request.headers.get('range')
+      
+      if (rangeHeader) {
+        // Parse range header (e.g., "bytes=0-1023")
+        const parts = rangeHeader.replace(/bytes=/, '').split('-')
+        const start = parseInt(parts[0], 10)
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1
+        const chunkSize = end - start + 1
+
+        // Read the requested chunk
+        const fileHandle = await open(filePath, 'r')
+        try {
+          const buffer = Buffer.allocUnsafe(chunkSize)
+          await fileHandle.read(buffer, 0, chunkSize, start)
+          
+          // Return partial content (206)
+          return new Response(buffer, {
+            status: 206,
+            headers: {
+              'Content-Type': mimeType,
+              'Content-Length': chunkSize.toString(),
+              'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+              'Accept-Ranges': 'bytes'
+            }
+          })
+        } finally {
+          await fileHandle.close()
+        }
+      } else {
+        // No range request - return full file
+        const data = await readFile(filePath)
+        return new Response(data, {
+          headers: {
+            'Content-Type': mimeType,
+            'Content-Length': fileSize.toString(),
+            'Accept-Ranges': 'bytes'
+          }
+        })
+      }
     } catch (error) {
-      console.error('Error loading image:', error)
-      return new Response('Error loading image', { status: 500 })
+      console.error('Error loading media file:', error)
+      return new Response('Error loading media file', { status: 500 })
     }
   })
 

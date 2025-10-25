@@ -9,6 +9,8 @@ export interface ImageItem {
   originalCaption: string // caption loaded from disk
   currentCaption: string // current caption in editor
   size: number // file size in bytes
+  mediaType: 'image' | 'video' // media type
+  duration?: number // video duration in seconds (only for videos)
 }
 
 export const useCaptionStore = defineStore('caption', () => {
@@ -52,6 +54,10 @@ export const useCaptionStore = defineStore('caption', () => {
   })
 
   const hasSelection = computed(() => selectedIndices.value.size > 0)
+
+  const isCurrentMediaVideo = computed(() => {
+    return currentImage.value?.mediaType === 'video'
+  })
 
   // Actions
   function setImages(newImages: ImageItem[]): void {
@@ -190,6 +196,7 @@ export const useCaptionStore = defineStore('caption', () => {
     hasImages,
     selectedImages,
     hasSelection,
+    isCurrentMediaVideo,
     // Actions
     setImages,
     setFolderPath,

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { watch, ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { useCaptionStore } from '../stores/captionStore'
+import { useVideoThumbnail } from '../composables/useVideoThumbnail'
 
 const store = useCaptionStore()
 const thumbnailRefs = ref<HTMLDivElement[]>([])
+const { extractThumbnail } = useVideoThumbnail()
+const videoThumbnails = ref<{ [key: string]: string }>({}) // Map video path to thumbnail data URL
 
 const selectImage = (index: number, event: MouseEvent): void => {
   // Prevent navigation if batch generation is active
@@ -44,6 +47,32 @@ const handleKeyDown = (event: KeyboardEvent): void => {
     store.selectAll()
   }
 }
+
+// Load video thumbnail
+const loadVideoThumbnail = async (videoPath: string): Promise<void> => {
+  if (videoThumbnails.value[videoPath]) return // Already loaded
+
+  try {
+    const thumbnail = await extractThumbnail(videoPath)
+    videoThumbnails.value[videoPath] = thumbnail
+  } catch (error) {
+    console.error('Failed to extract video thumbnail:', error)
+  }
+}
+
+// Load all video thumbnails when images change
+watch(
+  () => store.images,
+  (images) => {
+    // Load thumbnails for all videos
+    images.forEach((image) => {
+      if (image.mediaType === 'video') {
+        loadVideoThumbnail(image.path)
+      }
+    })
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
@@ -94,11 +123,28 @@ watch(
         @click="selectImage(index, $event)"
       >
         <div class="thumbnail-wrapper">
+          <!-- Video Thumbnail -->
           <img
+            v-if="image.mediaType === 'video' && videoThumbnails[image.path]"
+            :src="videoThumbnails[image.path]"
+            :alt="image.filename"
+            draggable="false"
+          />
+          <!-- Image Thumbnail -->
+          <img
+            v-else-if="image.mediaType === 'image'"
             :src="`local-image://${encodeURIComponent(image.path)}`"
             :alt="image.filename"
             draggable="false"
           />
+          <!-- Loading placeholder for videos without thumbnail yet -->
+          <div v-else class="thumbnail-loading">
+            <div class="loading-spinner-small"></div>
+          </div>
+          <!-- Video Badge -->
+          <div v-if="image.mediaType === 'video'" class="video-badge">
+            <span class="video-icon">▶</span>
+          </div>
           <div v-if="store.selectedIndices.has(index)" class="selection-overlay">
             <div class="selection-checkmark">✓</div>
           </div>
@@ -192,6 +238,51 @@ watch(
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.thumbnail-loading {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--accent-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.video-badge {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  z-index: 1;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.video-icon {
+  font-size: 8px;
 }
 
 .selection-overlay {

@@ -1,57 +1,69 @@
 # Caption Studio
 
-A powerful Electron-based application for managing image captions in training datasets. Perfect for machine learning practitioners working with image datasets for diffusion models and other computer vision tasks.
+A powerful Electron-based application for managing image and video captions in training datasets. Perfect for machine learning practitioners working with image datasets for diffusion models, video generation models, and other computer vision tasks.
 
 ## Features
 
 ### Core Functionality
 
-- **Folder-based workflow**: Open any folder and recursively load all images with their captions
-- **Supported formats**: JPG, JPEG, PNG, WEBP
+- **Folder-based workflow**: Open any folder and recursively load all media files with their captions
+- **Supported formats**: 
+  - **Images**: JPG, JPEG, PNG, WEBP
+  - **Videos**: MP4, WEBM, MOV
 - **In-memory editing**: All caption changes are kept in memory until you explicitly save
-- **Modified indicators**: Visual indicators show which images have unsaved changes
-- **Caption file format**: Text captions stored as `image_name.txt` alongside `image_name.jpg`
+- **Modified indicators**: Visual indicators show which files have unsaved changes
+- **Caption file format**: Text captions stored as `filename.txt` alongside media files
 - **Auto-trim captions**: Leading and trailing whitespace is automatically removed when saving
 
 ### AI-Powered Captioning
 
-- **Auto Captioner**: Generate captions using LLM vision models
+- **Auto Captioner**: Generate captions using LLM vision models (images only)
 - **Multiple providers**: Support for custom OpenAI-compatible APIs (LM Studio, Ollama) and OpenAI ChatGPT
 - **Batch generation**: Generate captions for multiple selected images
 - **Two modes**: Replace existing captions or append to them
 - **Configurable parameters**: Adjust temperature, max tokens, and system prompts
 - **Visual progress**: Progress bar and status display during batch captioning
 - **Cancellable operations**: Stop batch generation at any time
+- **Note**: Video captioning is not yet supported - videos must be captioned manually
 
 ### Multi-Select Operations
 
-- **Select multiple images**: Ctrl/Cmd+Click to toggle, Shift+Click for range selection
-- **Batch editing**: Edit captions for multiple images simultaneously
-- **Smart caption display**: Shows common caption if all selected images match, or placeholder for mixed captions
-- **Ctrl/Cmd+A**: Select all images in the current dataset
+- **Select multiple items**: Ctrl/Cmd+Click to toggle, Shift+Click for range selection
+- **Batch editing**: Edit captions for multiple files simultaneously
+- **Smart caption display**: Shows common caption if all selected items match, or placeholder for mixed captions
+- **Ctrl/Cmd+A**: Select all items in the current dataset
 
 ### User Interface
 
 - **Three-panel layout**:
-  - Left: Thumbnail list with visual indicators for modified captions and selection states
-  - Center: Canvas-based image preview with true zoom and aspect ratio preservation
+  - Left: Thumbnail list with visual indicators for modified captions, selection states, and video badges
+  - Center: Media viewer - Canvas-based image viewer with zoom/pan, or video player with controls
   - Right: Caption editor with real-time change tracking
-- **Dataset info**: Shows total image count and dataset size in top bar
+- **Dataset info**: Shows total file count and dataset size in top bar
 - **Keyboard-first workflow**: Navigate and edit entirely with keyboard shortcuts
 - **Dark/Light themes**: Easy on the eyes with system theme support
 
-### Image Viewing
+### Media Viewing
 
+**Image Viewer:**
 - **Canvas-based viewer**: True zoom with high-quality rendering
 - **Mouse wheel zoom**: Zoom from 100% to 500%, centered on cursor position
 - **Click & drag to pan**: Pan around zoomed images with constrained boundaries
 - **Click zoom percentage**: Click the zoom indicator to reset to fit-to-screen
 - **Smooth interactions**: Optimized rendering with proper HiDPI support
 
+**Video Player:**
+- **Looping playback**: Videos loop automatically by default
+- **Play/pause controls**: Click video or use control button
+- **Timeline seeking**: Scrub through video with the timeline slider
+- **Time display**: Shows current time and total duration
+- **Keyboard controls**: Space to play/pause, arrow keys to skip ±5 seconds
+- **Middle-frame thumbnails**: Thumbnail list shows the middle frame of each video
+
 ### Safety Features
 
 - **Unsaved changes warning**: Prompted before closing folder or app with unsaved changes
-- **Modified counter**: Shows number of images with unsaved captions
+- **Modified counter**: Shows number of files with unsaved captions
 - **Discard changes confirmation**: Confirm before discarding all unsaved changes
 - **Batch save**: Save all modified captions at once
 - **Smart folder reopening**: Only auto-reopens last folder if app was closed with folder open (not if you explicitly closed the folder)
@@ -66,20 +78,20 @@ A powerful Electron-based application for managing image captions in training da
 
 ### Navigation
 
-- `↑` or `K`: Previous image
-- `↓` or `J`: Next image
-- `Home`: Jump to first image
-- `End`: Jump to last image
+- `↑` or `K`: Previous item
+- `↓` or `J`: Next item
+- `Home`: Jump to first item
+- `End`: Jump to last item
 - `Ctrl/Cmd + Enter`: Toggle focus between navigation and caption editor
 - `Tab`: Focus caption editor
 - `Escape`: Unfocus caption editor (return to navigation mode)
 
 ### Selection
 
-- `Click`: Select single image
-- `Ctrl/Cmd + Click`: Toggle image selection
-- `Shift + Click`: Select range from last selected to clicked image
-- `Ctrl/Cmd + A`: Select all images (works outside text inputs)
+- `Click`: Select single item
+- `Ctrl/Cmd + Click`: Toggle item selection
+- `Shift + Click`: Select range from last selected to clicked item
+- `Ctrl/Cmd + A`: Select all items (works outside text inputs)
 
 ### Image Viewing
 
@@ -87,7 +99,15 @@ A powerful Electron-based application for managing image captions in training da
 - `Click & Drag` (when zoomed): Pan around the zoomed image (cursor changes to hand)
 - `Click zoom percentage`: Reset zoom to fit image to screen
 - **Pan boundaries**: Panning is constrained to image edges (no empty space visible)
-- **Auto-scroll thumbnails**: The thumbnail list automatically scrolls to keep selected image visible
+- **Auto-scroll thumbnails**: The thumbnail list automatically scrolls to keep selected item visible
+
+### Video Viewing
+
+- `Click video` or `Space`: Play/pause video
+- `Arrow Left`: Skip backward 5 seconds
+- `Arrow Right`: Skip forward 5 seconds
+- `Timeline slider`: Click or drag to seek to specific time
+- **Note**: Videos loop automatically and are muted by default
 
 ### Actions
 
@@ -100,7 +120,7 @@ A powerful Electron-based application for managing image captions in training da
 
 ### Fast Workflow
 
-1. Use `↑`/`↓` or `J`/`K` to navigate between images
+1. Use `↑`/`↓` or `J`/`K` to navigate between images and videos
 2. Press `Ctrl/Cmd + Enter` or `Tab` to focus the caption editor
 3. Type your caption
 4. Press `Ctrl/Cmd + Enter` or `Escape` to return to navigation mode
@@ -131,35 +151,41 @@ A powerful Electron-based application for managing image captions in training da
 
 ### Using Auto Captioner
 
-1. Select one or more images
+1. Select one or more images (note: videos cannot be auto-captioned yet)
 2. Click "Generate Caption" button (or the dropdown for append mode)
 3. For batch operations:
    - Progress bar shows current status
    - Filename of current image being processed
    - Click "Cancel" to stop batch generation
 4. Generated captions automatically update the selected images
+5. **Video files**: The Generate button is disabled for videos - captions must be entered manually
 
 ## Usage
 
 1. **Open a folder**: Click "📁 Open Folder" or press `Ctrl/Cmd+O`
-2. **Navigate images**: Use arrow keys or J/K to move between images
+2. **Navigate media**: Use arrow keys or J/K to move between images and videos
 3. **Select multiple**: Use Ctrl/Cmd+Click or Shift+Click for batch operations
 4. **Edit captions**: Click the caption area or press Tab to start editing
-5. **Generate captions**: Use the Auto Captioner for AI-powered captioning
+5. **Generate captions**: Use the Auto Captioner for AI-powered image captioning
 6. **Save changes**: Press `Ctrl/Cmd+S` or click "💾 Save All"
-7. **Track progress**: Modified images show an orange indicator in the thumbnail list
+7. **Track progress**: Modified files show an orange indicator in the thumbnail list
+8. **Video playback**: Click video to play/pause, use controls to seek through timeline
 
 ## Caption File Structure
 
-For an image file `photo.jpg`, the caption is stored in `photo.txt` in the same directory:
+Captions are stored as `.txt` files alongside media files with the same base name:
 
 ```
 dataset/
 ├── photo.jpg
 ├── photo.txt
+├── video_clip.mp4
+├── video_clip.txt
 ├── subfolder/
 │   ├── image001.png
-│   └── image001.txt
+│   ├── image001.txt
+│   ├── video002.webm
+│   └── video002.txt
 ```
 
 If a caption file doesn't exist, the caption editor will be empty and a new file will be created when you save.

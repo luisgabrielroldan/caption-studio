@@ -2,7 +2,7 @@ import { ref, watch, watchEffect, onUnmounted } from 'vue'
 import type { Ref } from 'vue'
 
 interface CanvasImageViewerOptions {
-  currentImage: Ref<{ path: string } | null>
+  currentImage: Ref<{ path: string; mediaType?: 'image' | 'video' } | null>
 }
 
 /**
@@ -64,10 +64,8 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions): {
   const loadImage = async (imagePath: string): Promise<void> => {
     // SAFETY: Don't load if canvas isn't ready - prevents rendering bugs
     if (!isInitialized.value) {
-      if (import.meta.env.DEV) {
-        console.error('[Canvas] Attempted to load image before canvas initialization!')
-        console.trace('[Canvas] Load stack trace:')
-      }
+      // Silently skip - this can happen during initial mount race conditions
+      // The image will load properly once canvas is initialized
       return
     }
 
@@ -360,11 +358,12 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions): {
 
   // Watch for image changes
   // IMPORTANT: immediate: false prevents loading before canvas is ready
+  // Only load if the current item is an image (not a video)
   watch(
-    () => currentImage.value?.path,
-    (newPath) => {
-      if (newPath) {
-        loadImage(newPath)
+    () => ({ path: currentImage.value?.path, mediaType: currentImage.value?.mediaType }),
+    (newValue) => {
+      if (newValue.path && newValue.mediaType === 'image') {
+        loadImage(newValue.path)
       } else {
         loadedImage.value = null
         if (canvasRef.value && containerRef.value) {
@@ -409,8 +408,8 @@ export function useCanvasImageViewer(options: CanvasImageViewerOptions): {
     })
     resizeObserver.observe(containerRef.value)
 
-    // Step 4: Load image LAST (if one exists)
-    if (currentImage.value?.path) {
+    // Step 4: Load image LAST (if one exists and is an image, not a video)
+    if (currentImage.value?.path && currentImage.value?.mediaType === 'image') {
       loadImage(currentImage.value.path)
     }
 

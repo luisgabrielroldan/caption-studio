@@ -179,10 +179,29 @@ const placeholderText = computed(() => {
   if (store.selectedImages.length > 1) {
     const commonCaption = getCommonCaption()
     return commonCaption === null
-      ? '(Multiple images selected - different captions)'
-      : 'Enter caption for this image...'
+      ? '(Multiple items selected - different captions)'
+      : 'Enter caption...'
   }
-  return 'Enter caption for this image...'
+  return store.isCurrentMediaVideo ? 'Enter caption for this video...' : 'Enter caption for this image...'
+})
+
+// Check if any selected items are videos
+const hasVideoInSelection = computed(() => {
+  if (store.selectedImages.length > 0) {
+    return store.selectedImages.some((img) => img.mediaType === 'video')
+  }
+  return store.isCurrentMediaVideo
+})
+
+// Tooltip for disabled generate button
+const generateTooltip = computed(() => {
+  if (hasVideoInSelection.value) {
+    return 'Video captioning is not yet supported'
+  }
+  if (store.selectedImages.length > 1) {
+    return `Generate captions for ${store.selectedImages.length} selected images`
+  }
+  return 'Generate new caption (replaces existing)'
 })
 
 // Toggle dropdown
@@ -288,12 +307,13 @@ defineExpose({
         <div ref="dropdownRef" class="split-button-group">
           <button
             class="action-btn split-btn-main"
-            :disabled="!store.currentImage || isGenerating || batchProgress.isActive"
-            :title="
-              store.selectedImages.length > 1
-                ? `Generate captions for ${store.selectedImages.length} selected images`
-                : 'Generate new caption (replaces existing)'
+            :disabled="
+              !store.currentImage ||
+              isGenerating ||
+              batchProgress.isActive ||
+              hasVideoInSelection
             "
+            :title="generateTooltip"
             @click="handleGenerateCaption"
           >
             <span v-if="isGenerating || batchProgress.isActive" class="spinner"></span>
@@ -302,9 +322,14 @@ defineExpose({
           </button>
           <button
             class="action-btn split-btn-toggle"
-            :disabled="!store.currentImage || isGenerating || batchProgress.isActive"
+            :disabled="
+              !store.currentImage ||
+              isGenerating ||
+              batchProgress.isActive ||
+              hasVideoInSelection
+            "
             :class="{ active: dropdownOpen }"
-            title="More options"
+            :title="hasVideoInSelection ? 'Video captioning not supported' : 'More options'"
             @click="toggleDropdown"
           >
             <span class="chevron">▼</span>
