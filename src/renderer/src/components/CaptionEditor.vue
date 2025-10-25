@@ -5,6 +5,12 @@ import { useConfig } from '../composables/useConfig'
 import { useAutoCaptioner } from '../composables/useAutoCaptioner'
 import { useBatchCaptioning } from '../composables/useBatchCaptioning'
 import { CONFIG_KEYS, DEFAULTS, EVENTS } from '../constants'
+import type ImagePreview from './ImagePreview.vue'
+
+// Props - receives the component instance directly, not wrapped in a ref
+const props = defineProps<{
+  imagePreviewRef?: InstanceType<typeof ImagePreview> | null
+}>()
 
 const store = useCaptionStore()
 const config = useConfig()
@@ -134,7 +140,7 @@ const handleGenerateCaption = async (): Promise<void> => {
   if (!store.currentImage) return
 
   if (store.selectedImages.length > 1) {
-    // Multiple images selected - use batch generation
+    // Multiple items selected - use batch generation (handles both images and videos)
     await batchGenerate(store.selectedImages, 'replace', generateCaption)
 
     // Refresh current caption in editor if current image was in selection
@@ -142,11 +148,28 @@ const handleGenerateCaption = async (): Promise<void> => {
       localCaption.value = store.currentImage.currentCaption
     }
   } else {
-    // Single image - generate just for current
-    const caption = await generateCaption(store.currentImage.path, 'replace', localCaption.value)
-    if (caption !== null) {
-      localCaption.value = caption
-      store.updateCurrentCaption(caption)
+    // Single item
+    if (store.isCurrentMediaVideo) {
+      // Video: capture current frame from preview
+      try {
+        const frame = await props.imagePreviewRef?.captureVideoFrame()
+        if (frame) {
+          const caption = await generateCaption(frame, 'replace', localCaption.value, true)
+          if (caption !== null) {
+            localCaption.value = caption
+            store.updateCurrentCaption(caption)
+          }
+        }
+      } catch (error) {
+        console.error('[CaptionEditor] Failed to capture video frame:', error)
+      }
+    } else {
+      // Image: use file path (existing behavior)
+      const caption = await generateCaption(store.currentImage.path, 'replace', localCaption.value)
+      if (caption !== null) {
+        localCaption.value = caption
+        store.updateCurrentCaption(caption)
+      }
     }
   }
 }
@@ -157,7 +180,7 @@ const handleAppendCaption = async (): Promise<void> => {
   dropdownOpen.value = false
 
   if (store.selectedImages.length > 1) {
-    // Multiple images selected - use batch generation
+    // Multiple items selected - use batch generation (handles both images and videos)
     await batchGenerate(store.selectedImages, 'append', generateCaption)
 
     // Refresh current caption in editor if current image was in selection
@@ -165,11 +188,28 @@ const handleAppendCaption = async (): Promise<void> => {
       localCaption.value = store.currentImage.currentCaption
     }
   } else {
-    // Single image - append just to current
-    const caption = await generateCaption(store.currentImage.path, 'append', localCaption.value)
-    if (caption !== null) {
-      localCaption.value = caption
-      store.updateCurrentCaption(caption)
+    // Single item
+    if (store.isCurrentMediaVideo) {
+      // Video: capture current frame from preview
+      try {
+        const frame = await props.imagePreviewRef?.captureVideoFrame()
+        if (frame) {
+          const caption = await generateCaption(frame, 'append', localCaption.value, true)
+          if (caption !== null) {
+            localCaption.value = caption
+            store.updateCurrentCaption(caption)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to capture video frame:', error)
+      }
+    } else {
+      // Image: use file path (existing behavior)
+      const caption = await generateCaption(store.currentImage.path, 'append', localCaption.value)
+      if (caption !== null) {
+        localCaption.value = caption
+        store.updateCurrentCaption(caption)
+      }
     }
   }
 }
@@ -185,22 +225,20 @@ const placeholderText = computed(() => {
   return store.isCurrentMediaVideo ? 'Enter caption for this video...' : 'Enter caption for this image...'
 })
 
-// Check if any selected items are videos
-const hasVideoInSelection = computed(() => {
-  if (store.selectedImages.length > 0) {
-    return store.selectedImages.some((img) => img.mediaType === 'video')
-  }
-  return store.isCurrentMediaVideo
-})
-
-// Tooltip for disabled generate button
+// Tooltip for generate button
 const generateTooltip = computed(() => {
-  if (hasVideoInSelection.value) {
-    return 'Video captioning is not yet supported'
-  }
   if (store.selectedImages.length > 1) {
+    const hasVideos = store.selectedImages.some((img) => img.mediaType === 'video')
+    if (hasVideos) {
+      return `Generate captions for ${store.selectedImages.length} selected items (videos use first frame)`
+    }
     return `Generate captions for ${store.selectedImages.length} selected images`
   }
+  
+  if (store.isCurrentMediaVideo) {
+    return 'Generate caption from current video frame'
+  }
+  
   return 'Generate new caption (replaces existing)'
 })
 
@@ -307,12 +345,7 @@ defineExpose({
         <div ref="dropdownRef" class="split-button-group">
           <button
             class="action-btn split-btn-main"
-            :disabled="
-              !store.currentImage ||
-              isGenerating ||
-              batchProgress.isActive ||
-              hasVideoInSelection
-            "
+            :disabled="!store.currentImage || isGenerating || batchProgress.isActive"
             :title="generateTooltip"
             @click="handleGenerateCaption"
           >
@@ -322,14 +355,9 @@ defineExpose({
           </button>
           <button
             class="action-btn split-btn-toggle"
-            :disabled="
-              !store.currentImage ||
-              isGenerating ||
-              batchProgress.isActive ||
-              hasVideoInSelection
-            "
+            :disabled="!store.currentImage || isGenerating || batchProgress.isActive"
             :class="{ active: dropdownOpen }"
-            :title="hasVideoInSelection ? 'Video captioning not supported' : 'More options'"
+            title="More options"
             @click="toggleDropdown"
           >
             <span class="chevron">▼</span>

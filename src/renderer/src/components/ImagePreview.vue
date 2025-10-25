@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useCaptionStore } from '../stores/captionStore'
 import { useCanvasImageViewer } from '../composables/useCanvasImageViewer'
 import { formatFileSize } from '../utils/formatters'
@@ -68,6 +68,27 @@ const handleDurationLoaded = (duration: number): void => {
     store.currentImage.duration = duration
   }
 }
+
+// Reference to VideoPreview component
+const videoPreviewRef = ref<InstanceType<typeof VideoPreview> | null>(null)
+
+// Capture current video frame (delegates to VideoPreview)
+const captureVideoFrame = async (): Promise<string | null> => {
+  if (store.isCurrentMediaVideo && videoPreviewRef.value) {
+    try {
+      return await videoPreviewRef.value.captureCurrentFrame()
+    } catch (error) {
+      console.error('[ImagePreview] Failed to capture video frame:', error)
+      return null
+    }
+  }
+  return null
+}
+
+// Expose to parent component
+defineExpose({
+  captureVideoFrame
+})
 </script>
 
 <template>
@@ -77,6 +98,7 @@ const handleDurationLoaded = (duration: number): void => {
     </div>
     <div v-else-if="store.currentImage.mediaType === 'video'" class="preview-container">
       <VideoPreview
+        ref="videoPreviewRef"
         :video-path="store.currentImage.path"
         :filename="store.currentImage.filename"
         :position="`${store.currentIndex + 1} / ${store.totalImages}`"

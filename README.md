@@ -17,14 +17,16 @@ A powerful Electron-based application for managing image and video captions in t
 
 ### AI-Powered Captioning
 
-- **Auto Captioner**: Generate captions using LLM vision models (images only)
+- **Auto Captioner**: Generate captions using LLM vision models for both images and videos
 - **Multiple providers**: Support for custom OpenAI-compatible APIs (LM Studio, Ollama) and OpenAI ChatGPT
-- **Batch generation**: Generate captions for multiple selected images
+- **Batch generation**: Generate captions for multiple selected items (images and videos)
 - **Two modes**: Replace existing captions or append to them
 - **Configurable parameters**: Adjust temperature, max tokens, and system prompts
 - **Visual progress**: Progress bar and status display during batch captioning
 - **Cancellable operations**: Stop batch generation at any time
-- **Note**: Video captioning is not yet supported - videos must be captioned manually
+- **Video captioning**: 
+  - Single video: Captures current visible frame when viewing
+  - Batch videos: Automatically uses first frame for captioning
 
 ### Multi-Select Operations
 
@@ -151,14 +153,17 @@ A powerful Electron-based application for managing image and video captions in t
 
 ### Using Auto Captioner
 
-1. Select one or more images (note: videos cannot be auto-captioned yet)
+1. Select one or more images/videos
 2. Click "Generate Caption" button (or the dropdown for append mode)
-3. For batch operations:
+3. **For single videos**: 
+   - Pause or scrub to the frame you want to caption
+   - Click "Generate Caption" to caption the current visible frame
+4. **For batch operations**:
    - Progress bar shows current status
-   - Filename of current image being processed
+   - Filename of current item being processed
+   - Videos automatically use their first frame
    - Click "Cancel" to stop batch generation
-4. Generated captions automatically update the selected images
-5. **Video files**: The Generate button is disabled for videos - captions must be entered manually
+5. Generated captions automatically update the selected items
 
 ## Usage
 

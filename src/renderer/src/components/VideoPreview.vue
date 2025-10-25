@@ -152,6 +152,36 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
 })
+
+// Expose method to capture current video frame as base64
+const captureCurrentFrame = (): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    if (!videoRef.value) {
+      reject(new Error('Video not loaded'))
+      return
+    }
+
+    const video = videoRef.value
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) {
+      reject(new Error('Failed to get canvas context'))
+      return
+    }
+
+    ctx.drawImage(video, 0, 0)
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+    resolve(dataUrl)
+  })
+}
+
+// Expose to parent component
+defineExpose({
+  captureCurrentFrame
+})
 </script>
 
 <template>

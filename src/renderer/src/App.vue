@@ -21,6 +21,7 @@ const store = useCaptionStore()
 const config = useConfig()
 const { showConfirm } = useDialog()
 const captionEditorRef = ref<InstanceType<typeof CaptionEditor> | null>(null)
+const imagePreviewRef = ref<InstanceType<typeof ImagePreview> | null>(null)
 const settingsDialogRef = ref<InstanceType<typeof SettingsDialog> | null>(null)
 
 // File operations
@@ -139,8 +140,8 @@ onUnmounted(() => {
         @mousedown="handleSplitterMouseDown"
       ></div>
       <div class="content-area">
-        <ImagePreview />
-        <CaptionEditor ref="captionEditorRef" />
+        <ImagePreview ref="imagePreviewRef" />
+        <CaptionEditor ref="captionEditorRef" :image-preview-ref="imagePreviewRef" />
       </div>
     </div>
 

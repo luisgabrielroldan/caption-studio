@@ -144,11 +144,23 @@ async function callVisionAPI(imageDataUrl: string, config: AutoCaptionerConfig):
 }
 
 /**
- * Generate caption for a single image
+ * Generate caption for a single image or video frame
  */
-async function captionImage(imagePath: string, config: AutoCaptionerConfig): Promise<string> {
-  // Convert image to base64
-  const imageDataUrl = await imageToBase64DataUrl(imagePath)
+async function captionImage(
+  imagePathOrBase64: string,
+  config: AutoCaptionerConfig,
+  isBase64: boolean = false
+): Promise<string> {
+  // Get image data URL
+  let imageDataUrl: string
+
+  if (isBase64) {
+    // Already base64 data URL (from video frame capture)
+    imageDataUrl = imagePathOrBase64
+  } else {
+    // Convert image file to base64
+    imageDataUrl = await imageToBase64DataUrl(imagePathOrBase64)
+  }
 
   // Call vision API
   const caption = await callVisionAPI(imageDataUrl, config)
@@ -160,21 +172,24 @@ async function captionImage(imagePath: string, config: AutoCaptionerConfig): Pro
  * Register IPC handlers for auto-captioner
  */
 export function registerAutoCaptionerHandlers(): void {
-  // Generate caption for single image
-  ipcMain.handle('auto-caption:generate', async (_event, imagePath: string) => {
-    try {
-      const store = await getStore()
-      const config = store.get('autoCaptioner') as AutoCaptionerConfig
+  // Generate caption for single image or video frame
+  ipcMain.handle(
+    'auto-caption:generate',
+    async (_event, imagePathOrBase64: string, isBase64: boolean = false) => {
+      try {
+        const store = await getStore()
+        const config = store.get('autoCaptioner') as AutoCaptionerConfig
 
-      if (!config) {
-        throw new Error('Auto-captioner is not configured')
+        if (!config) {
+          throw new Error('Auto-captioner is not configured')
+        }
+
+        const caption = await captionImage(imagePathOrBase64, config, isBase64)
+        return caption
+      } catch (error) {
+        console.error('Error generating caption:', error)
+        throw error
       }
-
-      const caption = await captionImage(imagePath, config)
-      return caption
-    } catch (error) {
-      console.error('Error generating caption:', error)
-      throw error
     }
-  })
+  )
 }

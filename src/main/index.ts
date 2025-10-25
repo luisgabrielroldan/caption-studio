@@ -248,8 +248,11 @@ app.whenReady().then(async () => {
           const buffer = Buffer.allocUnsafe(chunkSize)
           await fileHandle.read(buffer, 0, chunkSize, start)
           
+          // Convert Buffer to Uint8Array for Response compatibility
+          const uint8Array = new Uint8Array(buffer)
+          
           // Return partial content (206)
-          return new Response(buffer, {
+          return new Response(uint8Array, {
             status: 206,
             headers: {
               'Content-Type': mimeType,
@@ -264,7 +267,11 @@ app.whenReady().then(async () => {
       } else {
         // No range request - return full file
         const data = await readFile(filePath)
-        return new Response(data, {
+        
+        // Convert Buffer to Uint8Array for Response compatibility
+        const uint8Array = new Uint8Array(data)
+        
+        return new Response(uint8Array, {
           headers: {
             'Content-Type': mimeType,
             'Content-Length': fileSize.toString(),

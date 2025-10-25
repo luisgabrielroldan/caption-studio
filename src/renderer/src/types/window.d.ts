@@ -39,7 +39,7 @@ export interface MainAPI {
   veil: () => Promise<void>
   config: ConfigAPI
   autoCaptioner: {
-    generate: (imagePath: string) => Promise<string>
+    generate: (imagePathOrBase64: string, isBase64?: boolean) => Promise<string>
   }
 }
 

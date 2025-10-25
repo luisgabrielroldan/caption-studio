@@ -6,25 +6,28 @@ export type CaptionMode = 'replace' | 'append'
 export function useAutoCaptioner(): {
   isGenerating: Ref<boolean>
   generateCaption: (
-    imagePath: string,
+    imagePathOrBase64: string,
     mode?: CaptionMode | string,
-    currentCaption?: string
+    currentCaption?: string,
+    isBase64?: boolean
   ) => Promise<string | null>
 } {
   const { showError } = useDialog()
   const isGenerating = ref(false)
 
   /**
-   * Generate a caption for the given image
-   * @param imagePath - Full path to the image file
+   * Generate a caption for the given image or video frame
+   * @param imagePathOrBase64 - Full path to the image file, or base64 data URL for video frames
    * @param mode - Whether to replace or append to existing caption
    * @param currentCaption - The current caption text (used for append mode)
+   * @param isBase64 - If true, treats first parameter as base64 data URL instead of file path
    * @returns The generated caption (or combined caption in append mode)
    */
   async function generateCaption(
-    imagePath: string,
+    imagePathOrBase64: string,
     mode: CaptionMode | string = 'replace',
-    currentCaption: string = ''
+    currentCaption: string = '',
+    isBase64: boolean = false
   ): Promise<string | null> {
     if (isGenerating.value) {
       await showError('Caption generation is already in progress')
@@ -35,7 +38,10 @@ export function useAutoCaptioner(): {
 
     try {
       // Call the auto-captioner service
-      const generatedCaption = await window.api.autoCaptioner.generate(imagePath)
+      const generatedCaption = await window.api.autoCaptioner.generate(
+        imagePathOrBase64,
+        isBase64
+      )
 
       // Handle the mode
       if (mode === 'append') {

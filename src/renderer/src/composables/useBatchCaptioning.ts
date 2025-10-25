@@ -1,5 +1,6 @@
 import { ref, type Ref } from 'vue'
 import { useCaptionStore, type ImageItem } from '../stores/captionStore'
+import { useVideoFrameCapture } from './useVideoFrameCapture'
 
 interface BatchProgress {
   isActive: boolean
@@ -18,11 +19,17 @@ export function useBatchCaptioning(): {
   batchGenerate: (
     images: ImageItem[],
     mode: 'replace' | 'append',
-    generateFn: (path: string, mode: string, currentCaption: string) => Promise<string | null>
+    generateFn: (
+      pathOrBase64: string,
+      mode: string,
+      currentCaption: string,
+      isBase64?: boolean
+    ) => Promise<string | null>
   ) => Promise<void>
   cancel: () => void
 } {
   const store = useCaptionStore()
+  const { captureFrame } = useVideoFrameCapture()
 
   const progress = ref<BatchProgress>({
     isActive: false,
@@ -40,8 +47,8 @@ export function useBatchCaptioning(): {
   }
 
   /**
-   * Generate captions for multiple images
-   * @param images - Array of images to process
+   * Generate captions for multiple images and videos
+   * @param images - Array of images/videos to process
    * @param mode - 'replace' or 'append'
    * @param generateFn - Function to generate a single caption
    */
@@ -49,9 +56,10 @@ export function useBatchCaptioning(): {
     images: ImageItem[],
     mode: 'replace' | 'append',
     generateFn: (
-      path: string,
+      pathOrBase64: string,
       mode: 'replace' | 'append',
-      currentCaption: string
+      currentCaption: string,
+      isBase64?: boolean
     ) => Promise<string | null>
   ): Promise<void> {
     if (images.length === 0) return
@@ -84,7 +92,22 @@ export function useBatchCaptioning(): {
         const currentCaption = mode === 'append' ? image.currentCaption : ''
 
         // Generate caption
-        const caption = await generateFn(image.path, mode, currentCaption)
+        let caption: string | null = null
+
+        if (image.mediaType === 'video') {
+          // For videos, capture first frame and pass as base64
+          try {
+            const frameBase64 = await captureFrame(image.path, 'first')
+            caption = await generateFn(frameBase64, mode, currentCaption, true)
+          } catch (error) {
+            console.error('Failed to capture video frame for captioning:', error)
+            // Skip this video on error
+            continue
+          }
+        } else {
+          // For images, use file path (existing behavior)
+          caption = await generateFn(image.path, mode, currentCaption, false)
+        }
 
         if (caption !== null) {
           // Find the index and update in store

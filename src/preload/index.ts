@@ -20,7 +20,8 @@ const api = {
     getRecentFolders: () => ipcRenderer.invoke('config:get-recent-folders')
   },
   autoCaptioner: {
-    generate: (imagePath: string) => ipcRenderer.invoke('auto-caption:generate', imagePath)
+    generate: (imagePathOrBase64: string, isBase64?: boolean) =>
+      ipcRenderer.invoke('auto-caption:generate', imagePathOrBase64, isBase64)
   }
 }
 
