@@ -2,7 +2,9 @@
  * Composable for capturing video frames as base64 data URLs
  * Used primarily for batch captioning operations
  */
-export function useVideoFrameCapture() {
+export function useVideoFrameCapture(): {
+  captureFrame: (videoPath: string, position?: 'first' | 'middle') => Promise<string>
+} {
   /**
    * Extract a frame from a video file at a specific position
    * @param videoPath - Full path to the video file
@@ -112,4 +114,3 @@ export function useVideoFrameCapture() {
     captureFrame
   }
 }
-

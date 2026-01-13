@@ -45,9 +45,7 @@ async function findImages(dirPath: string): Promise<ImageData[]> {
             const captionPath = path.join(currentPath, `${baseName}.txt`)
 
             // Determine media type
-            const mediaType: 'image' | 'video' = IMAGE_EXTENSIONS.includes(ext)
-              ? 'image'
-              : 'video'
+            const mediaType: 'image' | 'video' = IMAGE_EXTENSIONS.includes(ext) ? 'image' : 'video'
 
             // Try to read existing caption
             let caption = ''

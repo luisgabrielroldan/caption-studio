@@ -116,10 +116,13 @@ onMounted(async () => {
   }
 
   // Listen for preferences menu event
-  cleanupPreferencesListener = registerIpcListener(MENU_EVENTS.SHOW_PREFERENCES, (...args: unknown[]) => {
-    const tab = args[0] as 'general' | 'autoCaptioner' | undefined
-    handleShowPreferences(tab)
-  })
+  cleanupPreferencesListener = registerIpcListener(
+    MENU_EVENTS.SHOW_PREFERENCES,
+    (...args: unknown[]) => {
+      const tab = args[0] as 'general' | 'autoCaptioner' | undefined
+      handleShowPreferences(tab)
+    }
+  )
 
   // Listen for shortcuts menu event
   cleanupShortcutsListener = registerIpcListener(MENU_EVENTS.SHOW_SHORTCUTS, () => {

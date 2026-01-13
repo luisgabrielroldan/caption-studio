@@ -69,7 +69,7 @@ const handlePause = (): void => {
 const handleError = (event: Event): void => {
   const video = event.target as HTMLVideoElement
   const error = video.error
-  
+
   if (error) {
     console.error('[VideoPreview] Video error:', {
       code: error.code,
@@ -77,7 +77,7 @@ const handleError = (event: Event): void => {
       path: props.videoPath
     })
   }
-  
+
   isLoading.value = false
 }
 
@@ -106,11 +106,7 @@ const handleKeyDown = (event: KeyboardEvent): void => {
 
   // Don't handle shortcuts if user is typing in an input field
   const target = event.target as HTMLElement
-  if (
-    target.tagName === 'INPUT' ||
-    target.tagName === 'TEXTAREA' ||
-    target.isContentEditable
-  ) {
+  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
     return
   }
 
@@ -125,10 +121,7 @@ const handleKeyDown = (event: KeyboardEvent): void => {
       break
     case 'ArrowRight':
       event.preventDefault()
-      videoRef.value.currentTime = Math.min(
-        videoRef.value.duration,
-        videoRef.value.currentTime + 5
-      )
+      videoRef.value.currentTime = Math.min(videoRef.value.duration, videoRef.value.currentTime + 5)
       break
   }
 }
@@ -214,7 +207,11 @@ defineExpose({
         <div class="loading-spinner"></div>
       </div>
       <div class="video-controls">
-        <button class="control-btn play-pause" :title="isPlaying ? 'Pause' : 'Play'" @click.stop="togglePlayPause">
+        <button
+          class="control-btn play-pause"
+          :title="isPlaying ? 'Pause' : 'Play'"
+          @click.stop="togglePlayPause"
+        >
           <span v-if="isPlaying">⏸</span>
           <span v-else>▶</span>
         </button>
@@ -444,4 +441,3 @@ video {
   border: 1px solid var(--border-color);
 }
 </style>
-

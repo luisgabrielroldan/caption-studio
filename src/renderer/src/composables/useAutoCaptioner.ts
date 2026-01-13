@@ -38,10 +38,7 @@ export function useAutoCaptioner(): {
 
     try {
       // Call the auto-captioner service
-      const generatedCaption = await window.api.autoCaptioner.generate(
-        imagePathOrBase64,
-        isBase64
-      )
+      const generatedCaption = await window.api.autoCaptioner.generate(imagePathOrBase64, isBase64)
 
       // Handle the mode
       if (mode === 'append') {

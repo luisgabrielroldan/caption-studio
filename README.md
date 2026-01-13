@@ -7,7 +7,7 @@ A powerful Electron-based application for managing image and video captions in t
 ### Core Functionality
 
 - **Folder-based workflow**: Open any folder and recursively load all media files with their captions
-- **Supported formats**: 
+- **Supported formats**:
   - **Images**: JPG, JPEG, PNG, WEBP
   - **Videos**: MP4, WEBM, MOV
 - **In-memory editing**: All caption changes are kept in memory until you explicitly save
@@ -24,7 +24,7 @@ A powerful Electron-based application for managing image and video captions in t
 - **Configurable parameters**: Adjust temperature, max tokens, and system prompts
 - **Visual progress**: Progress bar and status display during batch captioning
 - **Cancellable operations**: Stop batch generation at any time
-- **Video captioning**: 
+- **Video captioning**:
   - Single video: Captures current visible frame when viewing
   - Batch videos: Automatically uses first frame for captioning
 
@@ -48,6 +48,7 @@ A powerful Electron-based application for managing image and video captions in t
 ### Media Viewing
 
 **Image Viewer:**
+
 - **Canvas-based viewer**: True zoom with high-quality rendering
 - **Mouse wheel zoom**: Zoom from 100% to 500%, centered on cursor position
 - **Click & drag to pan**: Pan around zoomed images with constrained boundaries
@@ -55,6 +56,7 @@ A powerful Electron-based application for managing image and video captions in t
 - **Smooth interactions**: Optimized rendering with proper HiDPI support
 
 **Video Player:**
+
 - **Looping playback**: Videos loop automatically by default
 - **Play/pause controls**: Click video or use control button
 - **Timeline seeking**: Scrub through video with the timeline slider
@@ -155,7 +157,7 @@ A powerful Electron-based application for managing image and video captions in t
 
 1. Select one or more images/videos
 2. Click "Generate Caption" button (or the dropdown for append mode)
-3. **For single videos**: 
+3. **For single videos**:
    - Pause or scrub to the frame you want to caption
    - Click "Generate Caption" to caption the current visible frame
 4. **For batch operations**:

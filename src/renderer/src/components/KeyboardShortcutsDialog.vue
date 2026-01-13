@@ -8,27 +8,39 @@ const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
 const modKey = isMac ? '⌘' : 'Ctrl'
 
 const shortcuts = [
-  { category: 'Navigation', items: [
-    { keys: ['↑', 'K'], description: 'Previous image' },
-    { keys: ['↓', 'J'], description: 'Next image' },
-    { keys: ['Home'], description: 'First image' },
-    { keys: ['End'], description: 'Last image' },
-  ]},
-  { category: 'Focus', items: [
-    { keys: ['Tab'], description: 'Focus caption editor' },
-    { keys: [`${modKey} + Enter`], description: 'Toggle focus (editor ↔ navigation)' },
-    { keys: ['Esc'], description: 'Unfocus editor' },
-  ]},
-  { category: 'File Operations', items: [
-    { keys: [`${modKey} + O`], description: 'Open folder' },
-    { keys: [`${modKey} + S`], description: 'Save all captions' },
-    { keys: [`${modKey} + Shift + R`], description: 'Discard all changes' },
-    { keys: [`${modKey} + W`], description: 'Close folder' },
-  ]},
-  { category: 'Application', items: [
-    { keys: [`${modKey} + ,`], description: 'Open preferences' },
-    { keys: ['Shift + F12'], description: 'Veil (hide window)' },
-  ]},
+  {
+    category: 'Navigation',
+    items: [
+      { keys: ['↑', 'K'], description: 'Previous image' },
+      { keys: ['↓', 'J'], description: 'Next image' },
+      { keys: ['Home'], description: 'First image' },
+      { keys: ['End'], description: 'Last image' }
+    ]
+  },
+  {
+    category: 'Focus',
+    items: [
+      { keys: ['Tab'], description: 'Focus caption editor' },
+      { keys: [`${modKey} + Enter`], description: 'Toggle focus (editor ↔ navigation)' },
+      { keys: ['Esc'], description: 'Unfocus editor' }
+    ]
+  },
+  {
+    category: 'File Operations',
+    items: [
+      { keys: [`${modKey} + O`], description: 'Open folder' },
+      { keys: [`${modKey} + S`], description: 'Save all captions' },
+      { keys: [`${modKey} + Shift + R`], description: 'Discard all changes' },
+      { keys: [`${modKey} + W`], description: 'Close folder' }
+    ]
+  },
+  {
+    category: 'Application',
+    items: [
+      { keys: [`${modKey} + ,`], description: 'Open preferences' },
+      { keys: ['Shift + F12'], description: 'Veil (hide window)' }
+    ]
+  }
 ]
 
 const show = (): void => {
@@ -62,7 +74,11 @@ defineExpose({ show, hide })
           <div v-for="section in shortcuts" :key="section.category" class="shortcut-section">
             <h3>{{ section.category }}</h3>
             <div class="shortcuts-list">
-              <div v-for="shortcut in section.items" :key="shortcut.description" class="shortcut-row">
+              <div
+                v-for="shortcut in section.items"
+                :key="shortcut.description"
+                class="shortcut-row"
+              >
                 <div class="shortcut-keys">
                   <kbd v-for="(key, index) in shortcut.keys" :key="key">
                     {{ key }}

@@ -11,7 +11,11 @@ const thumbnailCache = ref<ThumbnailCache>({})
  * Uses browser video element + canvas to capture frame
  * Results are cached to avoid re-extraction
  */
-export function useVideoThumbnail() {
+export function useVideoThumbnail(): {
+  extractThumbnail: (videoPath: string) => Promise<string>
+  clearCache: () => void
+  removeThumbnail: (videoPath: string) => void
+} {
   /**
    * Extract thumbnail from video at 50% position
    * @param videoPath - Full path to the video file
@@ -84,7 +88,7 @@ export function useVideoThumbnail() {
         // Get more detailed error information
         const error = video.error
         let errorMessage = 'Unknown error'
-        
+
         if (error) {
           switch (error.code) {
             case error.MEDIA_ERR_ABORTED:
@@ -103,11 +107,11 @@ export function useVideoThumbnail() {
               errorMessage = error.message || 'Unknown error'
           }
         }
-        
+
         // Clean up
         video.src = ''
         video.load()
-        
+
         reject(new Error(`Failed to load video: ${errorMessage}`))
       })
 
@@ -136,4 +140,3 @@ export function useVideoThumbnail() {
     removeThumbnail
   }
 }
-

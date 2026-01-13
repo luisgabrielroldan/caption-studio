@@ -210,7 +210,7 @@ app.whenReady().then(async () => {
       // Determine mime type based on extension
       let mimeType = 'application/octet-stream'
       const lowerPath = filePath.toLowerCase()
-      
+
       // Images
       if (lowerPath.endsWith('.png')) {
         mimeType = 'image/png'
@@ -234,7 +234,7 @@ app.whenReady().then(async () => {
 
       // Check for range request (needed for video seeking)
       const rangeHeader = request.headers.get('range')
-      
+
       if (rangeHeader) {
         // Parse range header (e.g., "bytes=0-1023")
         const parts = rangeHeader.replace(/bytes=/, '').split('-')
@@ -247,10 +247,10 @@ app.whenReady().then(async () => {
         try {
           const buffer = Buffer.allocUnsafe(chunkSize)
           await fileHandle.read(buffer, 0, chunkSize, start)
-          
+
           // Convert Buffer to Uint8Array for Response compatibility
           const uint8Array = new Uint8Array(buffer)
-          
+
           // Return partial content (206)
           return new Response(uint8Array, {
             status: 206,
@@ -267,10 +267,10 @@ app.whenReady().then(async () => {
       } else {
         // No range request - return full file
         const data = await readFile(filePath)
-        
+
         // Convert Buffer to Uint8Array for Response compatibility
         const uint8Array = new Uint8Array(data)
-        
+
         return new Response(uint8Array, {
           headers: {
             'Content-Type': mimeType,

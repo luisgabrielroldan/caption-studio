@@ -222,7 +222,9 @@ const placeholderText = computed(() => {
       ? '(Multiple items selected - different captions)'
       : 'Enter caption...'
   }
-  return store.isCurrentMediaVideo ? 'Enter caption for this video...' : 'Enter caption for this image...'
+  return store.isCurrentMediaVideo
+    ? 'Enter caption for this video...'
+    : 'Enter caption for this image...'
 })
 
 // Tooltip for generate button
@@ -234,11 +236,11 @@ const generateTooltip = computed(() => {
     }
     return `Generate captions for ${store.selectedImages.length} selected images`
   }
-  
+
   if (store.isCurrentMediaVideo) {
     return 'Generate caption from current video frame'
   }
-  
+
   return 'Generate new caption (replaces existing)'
 })
 
