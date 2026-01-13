@@ -1,6 +1,8 @@
 # Caption Studio
 
-A powerful Electron-based application for managing image and video captions in training datasets. Perfect for machine learning practitioners working with image datasets for diffusion models, video generation models, and other computer vision tasks.
+> ⚠️ **Disclaimer**: This project is "vibe coded" — use it at your own risk. I built this tool in a very short time to solve a specific problem I had, and it worked great for my use case. Decided to share it in case it helps others too.
+
+A desktop application for managing image and video captions in training datasets. Useful for machine learning practitioners working with datasets for diffusion models, video generation, and other computer vision tasks.
 
 ## Features
 
