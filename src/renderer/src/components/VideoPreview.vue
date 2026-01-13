@@ -104,6 +104,16 @@ const handleSeekEnd = (): void => {
 const handleKeyDown = (event: KeyboardEvent): void => {
   if (!videoRef.value) return
 
+  // Don't handle shortcuts if user is typing in an input field
+  const target = event.target as HTMLElement
+  if (
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.isContentEditable
+  ) {
+    return
+  }
+
   switch (event.code) {
     case 'Space':
       event.preventDefault()

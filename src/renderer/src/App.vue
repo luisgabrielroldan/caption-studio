@@ -15,6 +15,7 @@ import ThumbnailList from './components/ThumbnailList.vue'
 import ImagePreview from './components/ImagePreview.vue'
 import CaptionEditor from './components/CaptionEditor.vue'
 import SettingsDialog from './components/SettingsDialog.vue'
+import KeyboardShortcutsDialog from './components/KeyboardShortcutsDialog.vue'
 import AppDialog from './components/AppDialog.vue'
 
 const store = useCaptionStore()
@@ -23,6 +24,7 @@ const { showConfirm } = useDialog()
 const captionEditorRef = ref<InstanceType<typeof CaptionEditor> | null>(null)
 const imagePreviewRef = ref<InstanceType<typeof ImagePreview> | null>(null)
 const settingsDialogRef = ref<InstanceType<typeof SettingsDialog> | null>(null)
+const shortcutsDialogRef = ref<InstanceType<typeof KeyboardShortcutsDialog> | null>(null)
 
 // File operations
 const { openFolder, saveCaptions, closeFolder } = useFileOperations()
@@ -43,6 +45,11 @@ useTheme()
 // Handle menu event for showing preferences
 const handleShowPreferences = (tab?: 'general' | 'autoCaptioner'): void => {
   settingsDialogRef.value?.show(tab)
+}
+
+// Handle menu event for showing keyboard shortcuts
+const handleShowShortcuts = (): void => {
+  shortcutsDialogRef.value?.show()
 }
 
 // Handle custom event from components
@@ -80,7 +87,8 @@ useKeyboardShortcuts({
   onShowPreferences: handleShowPreferences
 })
 
-let cleanupIpcListener: (() => void) | null = null
+let cleanupPreferencesListener: (() => void) | null = null
+let cleanupShortcutsListener: (() => void) | null = null
 
 onMounted(async () => {
   // Expose functions for tray menu
@@ -108,9 +116,14 @@ onMounted(async () => {
   }
 
   // Listen for preferences menu event
-  cleanupIpcListener = registerIpcListener(MENU_EVENTS.SHOW_PREFERENCES, (...args: unknown[]) => {
+  cleanupPreferencesListener = registerIpcListener(MENU_EVENTS.SHOW_PREFERENCES, (...args: unknown[]) => {
     const tab = args[0] as 'general' | 'autoCaptioner' | undefined
     handleShowPreferences(tab)
+  })
+
+  // Listen for shortcuts menu event
+  cleanupShortcutsListener = registerIpcListener(MENU_EVENTS.SHOW_SHORTCUTS, () => {
+    handleShowShortcuts()
   })
 
   // Listen for custom open-settings event
@@ -118,9 +131,12 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  // Clean up IPC listener
-  if (cleanupIpcListener) {
-    cleanupIpcListener()
+  // Clean up IPC listeners
+  if (cleanupPreferencesListener) {
+    cleanupPreferencesListener()
+  }
+  if (cleanupShortcutsListener) {
+    cleanupShortcutsListener()
   }
   // Clean up custom event listener
   window.removeEventListener('open-settings', handleOpenSettings)
@@ -147,6 +163,9 @@ onUnmounted(() => {
 
     <!-- Settings Dialog -->
     <SettingsDialog ref="settingsDialogRef" />
+
+    <!-- Keyboard Shortcuts Dialog -->
+    <KeyboardShortcutsDialog ref="shortcutsDialogRef" />
 
     <!-- App Dialog -->
     <AppDialog />

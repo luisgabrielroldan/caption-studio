@@ -21,6 +21,7 @@ export const MENU_EVENTS = {
   FIRST_IMAGE: 'menu:first-image',
   LAST_IMAGE: 'menu:last-image',
   FOCUS_EDITOR: 'menu:focus-editor',
+  SHOW_SHORTCUTS: 'menu:show-shortcuts',
   SHOW_PREFERENCES: 'menu:show-preferences'
 } as const
 
